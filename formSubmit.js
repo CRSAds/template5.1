@@ -62,14 +62,20 @@ export function buildPayload(campaign, options = { includeSponsors: true }) {
 window.buildPayload = buildPayload;
 
 export function fetchLead(payload) {
-  fetch('https://shortenlongformplussponsorvragen.vercel.app/api/submit', {
+  return fetch('https://shortenlongformplussponsorvragen.vercel.app/api/submit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   })
-    .then(res => res.json())
-    .then(data => console.log("Lead verzonden:", data))
-    .catch(err => console.error("Verzendfout:", err));
+  .then(res => res.json())
+  .then(data => {
+    console.log("Lead verzonden:", data);
+    return data; // return zodat .then() werkt
+  })
+  .catch(err => {
+    console.error("Verzendfout:", err);
+    throw err; // gooi fout door zodat .catch() extern werkt
+  });
 }
 window.fetchLead = fetchLead;
 
