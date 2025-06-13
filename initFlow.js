@@ -2,6 +2,7 @@
 import { reloadImages } from './imageFix.js';
 import { fetchLead, buildPayload } from './formSubmit.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
+import setupSovendus from './setupSovendus.js';
 
 const longFormCampaigns = [];
 window.longFormCampaigns = longFormCampaigns;
@@ -127,9 +128,16 @@ export default function initFlow() {
         const next = skipNext ? steps[index + 2] : steps[index + 1];
 
         if (next) {
-          next.style.display = 'block';
-          reloadImages(next);
-        }
+  next.style.display = 'block';
+
+  // 👉 Sovendus sectie detecteren → setupSovendus starten
+  if (next.id === 'sovendus-section') {
+    console.log('👉 Sovendus sectie zichtbaar gemaakt → setupSovendus() starten');
+    setupSovendus();
+  }
+
+  reloadImages(next);
+}
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
