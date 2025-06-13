@@ -117,34 +117,50 @@ export default function initFlow() {
           localStorage.setItem('email', email);
           localStorage.setItem('t_id', t_id);
 
-          localStorage.setItem('f_2_title', gender);
-          localStorage.setItem('f_3_firstname', firstname);
-          localStorage.setItem('f_4_lastname', lastname);
-          localStorage.setItem('f_1_email', email);
-
+          // 👉 als isShortForm → fetchLead + Sovendus handling
           if (isShortForm) {
             const includeSponsors = !(step.id === 'voorwaarden-section' && !btn.id);
             const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
-            fetchLead(payload);
+
+            fetchLead(payload).then(() => {
+              console.log('✅ Lead verzonden → Sovendus sectie nu tonen (indien van toepassing)');
+
+              step.style.display = 'none';
+              const next = skipNext ? steps[index + 2] : steps[index + 1];
+
+              if (next) {
+                next.style.display = 'block';
+
+                if (next.id === 'sovendus-section') {
+                  console.log('👉 Sovendus sectie zichtbaar gemaakt → setupSovendus() starten');
+                  setupSovendus();
+                }
+
+                reloadImages(next);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            });
+
+            // ⚠️ BELANGRIJK: hier return → zodat de rest van de "next" logica NIET meer direct runned
+            return;
           }
         }
 
+        // 👉 default next flow (non-shortform)
         step.style.display = 'none';
         const next = skipNext ? steps[index + 2] : steps[index + 1];
 
         if (next) {
-  next.style.display = 'block';
+          next.style.display = 'block';
 
-  // 👉 Sovendus sectie detecteren → setupSovendus starten
-  if (next.id === 'sovendus-section') {
-    console.log('👉 Sovendus sectie zichtbaar gemaakt → setupSovendus() starten');
-    setupSovendus();
-  }
+          if (next.id === 'sovendus-section') {
+            console.log('👉 Sovendus sectie zichtbaar gemaakt → setupSovendus() starten');
+            setupSovendus();
+          }
 
-  reloadImages(next);
-}
-
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+          reloadImages(next);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       });
     });
 
