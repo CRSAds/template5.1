@@ -1,28 +1,58 @@
+// setupSovendus.js
 export default function setupSovendus() {
-  console.log("Sovendus setup → start");
+  console.log('👉 setupSovendus gestart');
 
+  // timestamp opbouwen (zoals in werkende flow)
+  const d = new Date();
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const hour = d.getHours();
+  const minutes = d.getMinutes();
+  const seconds = d.getSeconds();
+
+  const timestampSovendus =
+    d.getFullYear() +
+    (month < 10 ? '0' : '') + month +
+    (day < 10 ? '0' : '') + day +
+    (hour < 10 ? '0' : '') + hour +
+    (minutes < 10 ? '0' : '') + minutes +
+    (seconds < 10 ? '0' : '') + seconds;
+
+  // consumer data uit localStorage
+  const salutation = localStorage.getItem('f_2_title') || '';
+  const firstName = localStorage.getItem('f_3_firstname') || '';
+  const lastName = localStorage.getItem('f_4_lastname') || '';
+  const email = localStorage.getItem('f_1_email') || '';
   const t_id = localStorage.getItem('t_id') || '';
-  const consumerSalutation = localStorage.getItem('f_2_title') || '';
-  const consumerFirstName = localStorage.getItem('f_3_firstname') || '';
-  const consumerLastName = localStorage.getItem('f_4_lastname') || '';
-  const consumerEmail = localStorage.getItem('f_1_email') || '';
-  const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
 
-  // Tracking pixel sturen
-  const trackingUrl = `https://tracking.sovendus.com/ts?trafficSourceNumber=5592&trafficMediumNumber=1&sessionId=${t_id}&timestamp=${timestamp}&consumerSalutation=${encodeURIComponent(consumerSalutation)}&consumerFirstName=${encodeURIComponent(consumerFirstName)}&consumerLastName=${encodeURIComponent(consumerLastName)}&consumerEmail=${encodeURIComponent(consumerEmail)}`;
+  // window.sovIframes vullen
+  window.sovIframes = window.sovIframes || [];
+  window.sovIframes.push({
+    trafficSourceNumber : '5592',
+    trafficMediumNumber : '1',
+    sessionId : t_id,
+    timestamp : timestampSovendus,
+    orderId : '',
+    orderValue : '',
+    orderCurrency : '',
+    usedCouponCode : '',
+    iframeContainerId : 'sovendus-container-1'
+  });
 
-  const img = new Image();
-  img.src = trackingUrl;
-  console.log('Sovendus tracking URL:', trackingUrl);
+  // window.sovConsumer vullen
+  window.sovConsumer = {
+    consumerSalutation : salutation,
+    consumerFirstName : firstName,
+    consumerLastName : lastName,
+    consumerEmail : email
+  };
 
-  // Iframe src invullen
-  const iframe = document.getElementById('sovendus-iframe');
-  if (iframe) {
-    const iframeUrl = `https://www.sovendus-connect.com/banner/api/banner?trafficSourceNumber=5592&trafficMediumNumber=1&sessionId=${t_id}&timestamp=${timestamp}&consumerSalutation=${encodeURIComponent(consumerSalutation)}&consumerFirstName=${encodeURIComponent(consumerFirstName)}&consumerLastName=${encodeURIComponent(consumerLastName)}&consumerEmail=${encodeURIComponent(consumerEmail)}&consumerCountry=NL`;
+  // FlexibleIframe script injecteren
+  const sovJsFile = 'https://www.sovendus-connect.com/sovabo/common/js/flexibleIframe.js';
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = sovJsFile;
+  document.head.appendChild(script);
 
-    iframe.src = iframeUrl;
-    console.log('Sovendus iframe URL:', iframeUrl);
-  } else {
-    console.warn('Sovendus iframe niet gevonden!');
-  }
+  console.log('👉 setupSovendus → flexibleIframe.js geladen');
 }
