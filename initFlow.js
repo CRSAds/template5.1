@@ -117,6 +117,11 @@ export default function initFlow() {
           localStorage.setItem('email', email);
           localStorage.setItem('t_id', t_id);
 
+          localStorage.setItem('f_2_title', gender);
+          localStorage.setItem('f_3_firstname', firstname);
+          localStorage.setItem('f_4_lastname', lastname);
+          localStorage.setItem('f_1_email', email);
+
           if (isShortForm) {
             const includeSponsors = !(step.id === 'voorwaarden-section' && !btn.id);
             const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
