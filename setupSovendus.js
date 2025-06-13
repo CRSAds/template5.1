@@ -1,58 +1,47 @@
 // setupSovendus.js
+
 export default function setupSovendus() {
   console.log('👉 setupSovendus gestart');
 
-  // timestamp opbouwen (zoals in werkende flow)
-  const d = new Date();
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
-  const hour = d.getHours();
-  const minutes = d.getMinutes();
-  const seconds = d.getSeconds();
-
-  const timestampSovendus =
-    d.getFullYear() +
-    (month < 10 ? '0' : '') + month +
-    (day < 10 ? '0' : '') + day +
-    (hour < 10 ? '0' : '') + hour +
-    (minutes < 10 ? '0' : '') + minutes +
-    (seconds < 10 ? '0' : '') + seconds;
-
-  // consumer data uit localStorage
-  const salutation = localStorage.getItem('f_2_title') || '';
-  const firstName = localStorage.getItem('f_3_firstname') || '';
-  const lastName = localStorage.getItem('f_4_lastname') || '';
-  const email = localStorage.getItem('f_1_email') || '';
+  // Sovendus params uit localStorage
   const t_id = localStorage.getItem('t_id') || '';
+  const consumerSalutation = localStorage.getItem('gender') || ''; // jouw "gender" veld is Salutation
+  const consumerFirstName = localStorage.getItem('firstname') || '';
+  const consumerLastName = localStorage.getItem('lastname') || '';
+  const consumerEmail = localStorage.getItem('email') || '';
 
-  // window.sovIframes vullen
-  window.sovIframes = window.sovIframes || [];
-  window.sovIframes.push({
-    trafficSourceNumber : '5592',
-    trafficMediumNumber : '1',
-    sessionId : t_id,
-    timestamp : timestampSovendus,
-    orderId : '',
-    orderValue : '',
-    orderCurrency : '',
-    usedCouponCode : '',
-    iframeContainerId : 'sovendus-container-1'
-  });
+  // Sovendus timestamp
+  const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
 
-  // window.sovConsumer vullen
-  window.sovConsumer = {
-    consumerSalutation : salutation,
-    consumerFirstName : firstName,
-    consumerLastName : lastName,
-    consumerEmail : email
-  };
+  // Sovendus flexiframe.js injecteren
+  const flexIframeUrl = 'https://www.sovendus-connect.com/sovabo/common/js/flexibleIframe.js';
 
-  // FlexibleIframe script injecteren
-  const sovJsFile = 'https://www.sovendus-connect.com/sovabo/common/js/flexibleIframe.js';
-  const script = document.createElement('script');
-  script.async = true;
-  script.src = sovJsFile;
-  document.head.appendChild(script);
+  const existingScript = document.querySelector(`script[src="${flexIframeUrl}"]`);
+  if (!existingScript) {
+    const script = document.createElement('script');
+    script.src = flexIframeUrl;
+    script.async = true;
+    document.head.appendChild(script);
+    console.log('👉 setupSovendus → flexibleIframe.js geladen');
+  }
 
-  console.log('👉 setupSovendus → flexibleIframe.js geladen');
+  // Sovendus iframe vullen
+  const iframe = document.getElementById('sovendus-iframe');
+  if (iframe) {
+    const iframeSrc = `https://www.sovendus-connect.com/banner/api/banner` +
+      `?trafficSourceNumber=5592` +
+      `&trafficMediumNumber=1` +
+      `&sessionId=${encodeURIComponent(t_id)}` +
+      `&timestamp=${timestamp}` +
+      `&consumerSalutation=${encodeURIComponent(consumerSalutation)}` +
+      `&consumerFirstName=${encodeURIComponent(consumerFirstName)}` +
+      `&consumerLastName=${encodeURIComponent(consumerLastName)}` +
+      `&consumerEmail=${encodeURIComponent(consumerEmail)}` +
+      `&consumerCountry=NL`;
+
+    iframe.src = iframeSrc;
+    console.log('👉 setupSovendus → iframe URL gezet:', iframeSrc);
+  } else {
+    console.warn('⚠️ setupSovendus → #sovendus-iframe niet gevonden!');
+  }
 }
