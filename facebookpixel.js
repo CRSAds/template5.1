@@ -1,23 +1,23 @@
-export function loadFacebookPixelOnce() {
-  if (window.fbq) return; // al geladen
+// facebookpixel.js
 
-  !function(f,b,e,v,n,t,s){
-    if(f.fbq) return;
-    n=f.fbq=function(){ n.callMethod ?
-      n.callMethod.apply(n,arguments) : n.queue.push(arguments) };
-    if(!f._fbq) f._fbq=n;
-    n.push=n; n.loaded=!0; n.version='2.0'; n.queue=[];
-    t=b.createElement(e); t.async=!0;
-    t.src=v;
-    s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)
-  }(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+console.log('✅ facebookpixel.js geladen');
 
-  fbq('init', '914605117462946');
-  fbq('track', 'PageView');
-}
+// Deze functie vuurt het Facebook 'Lead' event alleen als de URL afkomstig is van een FB-campagne
+export function fireFacebookLeadEventIfNeeded() {
+  const url = window.location.href;
 
-export function trackFacebookLead() {
-  if (!window.fbq) return;
-  fbq('track', 'Lead');
+  // Check op typische Facebook tracking parameters
+  const isFacebookTraffic = url.includes('utm_source=facebook') || url.includes('fbclid=');
+
+  if (isFacebookTraffic) {
+    console.log('📌 Facebook pixel triggeren → Lead');
+
+    if (typeof fbq === 'function') {
+      fbq('track', 'Lead');
+    } else {
+      console.warn('⚠️ Facebook Pixel (fbq) is niet beschikbaar op deze pagina');
+    }
+  } else {
+    console.log('ℹ️ Facebook pixel → niet getriggerd (geen Facebook-verwijzing)');
+  }
 }
