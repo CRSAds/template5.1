@@ -8,7 +8,6 @@ import { fireFacebookLeadEventIfNeeded } from './facebookpixel.js';
 const longFormCampaigns = [];
 window.longFormCampaigns = longFormCampaigns;
 
-// ✅ VALIDATE FORM FUNCTIE
 function validateForm(form) {
   let valid = true;
   let messages = [];
@@ -60,6 +59,9 @@ function validateForm(form) {
 export default function initFlow() {
   const longFormSection = document.getElementById('long-form-section');
   const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
+
+  // ✅ Reset bij herladen
+  longFormCampaigns.length = 0;
 
   if (!window.location.hostname.includes("swipepages.com")) {
     steps.forEach((el, i) => el.style.display = i === 0 ? 'block' : 'none');
@@ -113,8 +115,7 @@ export default function initFlow() {
             const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
 
             fetchLead(payload).then(() => {
-              fireFacebookLeadEventIfNeeded(); // ✅ Trigger eventueel Facebook pixel
-
+              fireFacebookLeadEventIfNeeded();
               step.style.display = 'none';
               const next = skipNext ? steps[index + 2] : steps[index + 1];
               if (next) {
@@ -151,6 +152,7 @@ export default function initFlow() {
         }
 
         if (campaign.requiresLongForm) {
+          console.log('✅ Long form sponsor geselecteerd:', campaignId);
           longFormCampaigns.push(campaign);
         } else {
           const payload = buildPayload(campaign);
@@ -163,6 +165,7 @@ export default function initFlow() {
 
         if (upcomingCoregs.length === 0 && longFormSection) {
           if (longFormCampaigns.length > 0) {
+            console.log('🟧 Long form wordt getoond – campaigns:', longFormCampaigns);
             longFormSection.style.display = 'block';
             reloadImages(longFormSection);
           } else if (next) {
