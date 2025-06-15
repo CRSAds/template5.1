@@ -3,6 +3,7 @@ import { reloadImages } from './imageFix.js';
 import { fetchLead, buildPayload } from './formSubmit.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
 import setupSovendus from './setupSovendus.js';
+import { fireFacebookLeadEventIfNeeded } from './facebookpixel.js';
 
 const longFormCampaigns = [];
 window.longFormCampaigns = longFormCampaigns;
@@ -12,7 +13,6 @@ function validateForm(form) {
   let valid = true;
   let messages = [];
 
-  // SHORT FORM → lead-form
   if (form.id === 'lead-form') {
     const gender = form.querySelector('input[name="gender"]:checked');
     const firstname = form.querySelector('#firstname')?.value.trim();
@@ -22,16 +22,17 @@ function validateForm(form) {
     const dob_year = form.querySelector('#dob-year')?.value.trim();
     const email = form.querySelector('#email')?.value.trim();
 
-    if (!gender) { valid = false; messages.push('Geslacht invullen'); }
-    if (!firstname) { valid = false; messages.push('Voornaam invullen'); }
-    if (!lastname) { valid = false; messages.push('Achternaam invullen'); }
-    if (!dob_day || !dob_month || !dob_year) { valid = false; messages.push('Geboortedatum invullen'); }
+    if (!gender) messages.push('Geslacht invullen');
+    if (!firstname) messages.push('Voornaam invullen');
+    if (!lastname) messages.push('Achternaam invullen');
+    if (!dob_day || !dob_month || !dob_year) messages.push('Geboortedatum invullen');
     if (!email || !email.includes('@') || !email.includes('.')) {
-      valid = false; messages.push('Geldig e-mailadres invullen');
+      messages.push('Geldig e-mailadres invullen');
     }
+
+    valid = messages.length === 0;
   }
 
-  // LONG FORM → long-form
   if (form.id === 'long-form') {
     const postcode = form.querySelector('#postcode')?.value.trim();
     const straat = form.querySelector('#straat')?.value.trim();
@@ -39,14 +40,14 @@ function validateForm(form) {
     const woonplaats = form.querySelector('#woonplaats')?.value.trim();
     const telefoon = form.querySelector('#telefoon')?.value.trim();
 
-    if (!postcode) { valid = false; messages.push('Postcode invullen'); }
-    if (!straat) { valid = false; messages.push('Straat invullen'); }
-    if (!huisnummer) { valid = false; messages.push('Huisnummer invullen'); }
-    if (!woonplaats) { valid = false; messages.push('Woonplaats invullen'); }
-    if (!telefoon) { valid = false; messages.push('Telefoonnummer invullen'); }
-    else if (telefoon.length > 11) {
-      valid = false; messages.push('Telefoonnummer mag max. 11 tekens bevatten');
-    }
+    if (!postcode) messages.push('Postcode invullen');
+    if (!straat) messages.push('Straat invullen');
+    if (!huisnummer) messages.push('Huisnummer invullen');
+    if (!woonplaats) messages.push('Woonplaats invullen');
+    if (!telefoon) messages.push('Telefoonnummer invullen');
+    else if (telefoon.length > 11) messages.push('Telefoonnummer mag max. 11 tekens bevatten');
+
+    valid = messages.length === 0;
   }
 
   if (!valid) {
@@ -68,34 +69,24 @@ export default function initFlow() {
   }
 
   steps.forEach((step, index) => {
-    // FLOW-NEXT HANDLER
     step.querySelectorAll('.flow-next').forEach(btn => {
       btn.addEventListener('click', () => {
         const skipNext = btn.classList.contains('skip-next-section');
-
-        // ✅ Haal campaign op → nodig voor coregAnswer logging bij sponsor-next
         const campaignId = step.id?.startsWith('campaign-') ? step.id : null;
         const campaign = sponsorCampaigns[campaignId];
 
-        // ✅ Als sponsor-next → log coregAnswer alvast:
         if (campaign && campaign.coregAnswerKey && btn.classList.contains('sponsor-next')) {
           localStorage.setItem(campaign.coregAnswerKey, btn.innerText.trim());
-          console.log(`Flow-next sponsor-next: set ${campaign.coregAnswerKey} → ${btn.innerText.trim()}`);
         }
 
-        // ✅ EXTRA FIX → als dit de voorwaarden-section is + flow-next button ZONDER id → sponsor_optin wissen!
         if (step.id === 'voorwaarden-section' && !btn.id) {
           localStorage.removeItem('sponsor_optin');
-          console.log('Flow-next zonder accept → sponsor_optin verwijderd');
         }
 
         const form = step.querySelector('form');
         const isShortForm = form?.id === 'lead-form';
 
-        // ✅ FORM VALIDATIE → STOP als niet geldig
-        if (form && !validateForm(form)) {
-          return;
-        }
+        if (form && !validateForm(form)) return;
 
         if (form) {
           const gender = form.querySelector('input[name="gender"]:checked')?.value || '';
@@ -117,64 +108,46 @@ export default function initFlow() {
           localStorage.setItem('email', email);
           localStorage.setItem('t_id', t_id);
 
-          // 👉 als isShortForm → fetchLead + Sovendus handling
           if (isShortForm) {
             const includeSponsors = !(step.id === 'voorwaarden-section' && !btn.id);
             const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
 
             fetchLead(payload).then(() => {
-              console.log('✅ Lead verzonden → Sovendus sectie nu tonen (indien van toepassing)');
+              fireFacebookLeadEventIfNeeded(); // ✅ Trigger eventueel Facebook pixel
 
               step.style.display = 'none';
               const next = skipNext ? steps[index + 2] : steps[index + 1];
-
               if (next) {
                 next.style.display = 'block';
-
-                if (next.id === 'sovendus-section') {
-                  console.log('👉 Sovendus sectie zichtbaar gemaakt → setupSovendus() starten');
-                  setupSovendus();
-                }
-
+                if (next.id === 'sovendus-section') setupSovendus();
                 reloadImages(next);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             });
 
-            // ⚠️ BELANGRIJK: hier return → zodat de rest van de "next" logica NIET meer direct runned
             return;
           }
         }
 
-        // 👉 default next flow (non-shortform)
         step.style.display = 'none';
         const next = skipNext ? steps[index + 2] : steps[index + 1];
-
         if (next) {
           next.style.display = 'block';
-
-          if (next.id === 'sovendus-section') {
-            console.log('👉 Sovendus sectie zichtbaar gemaakt → setupSovendus() starten');
-            setupSovendus();
-          }
-
+          if (next.id === 'sovendus-section') setupSovendus();
           reloadImages(next);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       });
     });
 
-    // SPONSOR-OPTIN HANDLER
     step.querySelectorAll('.sponsor-optin').forEach(button => {
       button.addEventListener('click', () => {
         const campaignId = button.id;
         const campaign = sponsorCampaigns[campaignId];
         if (!campaign) return;
 
-        // ✅ Hier coregAnswer ALTIJD loggen:
         if (campaign.coregAnswerKey) {
           localStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
-          console.log(`Sponsor-optin: set ${campaign.coregAnswerKey} → ${button.innerText.trim()}`);
         }
 
         if (campaign.requiresLongForm) {
@@ -227,14 +200,9 @@ function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
         const answerText = button.innerText.trim();
         coregAnswers[sponsorId].push(answerText);
 
-        if (!button.classList.contains('sponsor-next')) {
-          console.log(`[${sponsorId}] Flow-next zonder sponsor-next → standaard flow-next`);
-          return;
-        }
+        if (!button.classList.contains('sponsor-next')) return;
 
-        console.log(`[${sponsorId}] Sponsor-next detected → processing next step`);
         let nextStepId = '';
-
         button.classList.forEach(cls => {
           if (cls.startsWith('next-step-')) {
             nextStepId = cls.replace('next-step-', '');
@@ -263,8 +231,6 @@ function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
 function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
   const combinedAnswer = coregAnswers[sponsorId].join(' - ');
   localStorage.setItem(coregAnswerKey, combinedAnswer);
-  console.log(`Sponsor ${sponsorId} → coreg_answer = ${combinedAnswer}`);
-
   const currentCoregSection = document.querySelector(`.coreg-section[style*="display: block"]`);
   const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
   flowNextBtn?.click();
