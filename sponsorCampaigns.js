@@ -116,7 +116,7 @@ const sponsorCampaigns = {
     sid: 34,
     requiresLongForm: true,
     coregAnswerKey: "coreg_answer_campaign-generationzero",
-    hasCoregFlow: false
+    hasCoregFlow: true
   },
   "campaign-hotelspecials": {
     cid: 4621,
