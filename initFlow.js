@@ -219,18 +219,25 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
   const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
   flowNextBtn?.click();
 
-  const allCoregs = Array.from(document.querySelectorAll('.coreg-section'));
-  const remaining = allCoregs.filter(section => window.getComputedStyle(section).display !== 'none');
+  const allSteps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
+  const currentIdx = allSteps.findIndex(s => s === currentCoregSection);
+
+  const remainingCoregs = allSteps.slice(currentIdx + 1).filter(
+    s => s.classList.contains('coreg-section') && window.getComputedStyle(s).display !== 'none'
+  );
+
   const longFormSection = document.getElementById('long-form-section');
   const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
 
-  if (remaining.length === 0 && longFormSection) {
+  // ✅ Laat long form alleen zien NA ALLE coregs
+  if (remainingCoregs.length === 0 && longFormSection) {
     if (longFormCampaigns.length > 0 && !alreadyHandled) {
       console.log('🟧 Alle coregs klaar → long form tonen:', longFormCampaigns);
       longFormSection.style.display = 'block';
       longFormSection.setAttribute('data-displayed', 'true');
       reloadImages(longFormSection);
     } else {
+      // Overslaan en doorgaan naar volgende stap
       const next = longFormSection.nextElementSibling;
       if (next) {
         next.style.display = 'block';
