@@ -1,3 +1,4 @@
+// formSubmit.js
 import { reloadImages } from './imageFix.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
 
@@ -116,7 +117,7 @@ export default function setupFormSubmit() {
 
   btn.addEventListener('click', () => {
     const form = section.querySelector('form');
-    if (!validateLongForm(form)) return; // ✅ toepassen validatie
+    if (!validateLongForm(form)) return;
 
     const extraData = {
       postcode: document.getElementById('postcode')?.value.trim(),
