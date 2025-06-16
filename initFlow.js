@@ -224,9 +224,13 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
       longFormSection.style.display = 'block';
       longFormSection.setAttribute('data-displayed', 'true');
       reloadImages(longFormSection);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // Overslaan en doorgaan naar volgende stap
-      const next = longFormSection.nextElementSibling;
+      // Overslaan en doorgaan naar eerstvolgende zichtbare sectie na long form
+      let next = longFormSection.nextElementSibling;
+      while (next && window.getComputedStyle(next).display === 'none') {
+        next = next.nextElementSibling;
+      }
       if (next) {
         next.style.display = 'block';
         reloadImages(next);
