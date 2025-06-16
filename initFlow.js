@@ -144,6 +144,9 @@ export default function initFlow() {
        const answer = button.innerText.trim();
 const isPositive = ['ja', 'yes', 'akkoord'].includes(answer.toLowerCase());
 
+const answer = button.innerText.trim().toLowerCase();
+const isPositive = ['ja', 'yes', 'akkoord'].includes(answer);
+
 if (campaign.requiresLongForm === true && isPositive) {
   if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
     longFormCampaigns.push(campaign);
