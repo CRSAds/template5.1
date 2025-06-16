@@ -17,9 +17,19 @@ setupFormSubmit();
       return new OriginalURL(url, base || window.location.origin);
     } catch (err) {
       console.warn("🔁 URL-fout opgevangen (Swipe Pages patch):", url);
-      return new OriginalURL(window.location.origin + window.location.pathname);
+      // Retourneer een tijdelijke geldige URL om verdere fouten te voorkomen
+      return new OriginalURL('https://fallback.url');
     }
   };
 
   window.URL.prototype = OriginalURL.prototype;
 })();
+
+// ✅ Intercepteer clicks op <a href="#"> om redirect-bug te voorkomen
+document.addEventListener('click', function (e) {
+  const target = e.target.closest('a');
+  if (target && target.getAttribute('href') === '#') {
+    e.preventDefault();
+    console.warn('⚠️ Click op <a href="#"> geblokkeerd om redirect-bug te voorkomen');
+  }
+});
