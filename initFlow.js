@@ -243,6 +243,9 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
       reloadImages(longFormSection);
     } else {
       console.log('⏭ Geen long form sponsor → long form overslaan');
+      longFormSection.style.display = 'none'; // ✅ forceren dat hij niet verschijnt
+      longFormSection.setAttribute('data-displayed', 'true');
+
       const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
       const idx = steps.findIndex(s => s.id === 'long-form-section');
       const next = steps[idx + 1];
