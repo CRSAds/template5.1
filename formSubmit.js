@@ -3,6 +3,7 @@ import { reloadImages } from './imageFix.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
 
 window.sponsorCampaigns = sponsorCampaigns;
+window.submittedCampaigns = new Set();
 
 // Sponsoroptin registratie (optioneel)
 const sponsorOptinText = `spaaractief_ja directdeals_ja qliqs_ja outspot_ja onlineacties_ja aownu_ja betervrouw_ja ipay_ja cashbackkorting_ja cashhier_ja myclics_ja seniorenvoordeelpas_ja favorieteacties_ja spaaronline_ja cashbackacties_ja woolsocks_ja dealdonkey_ja centmail_ja`;
@@ -62,21 +63,31 @@ export function buildPayload(campaign, options = { includeSponsors: true }) {
 window.buildPayload = buildPayload;
 
 export function fetchLead(payload) {
+  const key = `${payload.cid}_${payload.sid}`;
+
+  if (window.submittedCampaigns.has(key)) {
+    console.warn("⛔️ fetchLead overgeslagen → al verzonden:", key);
+    return Promise.resolve({ skipped: true });
+  }
+
+  window.submittedCampaigns.add(key);
+
   return fetch('https://shortenlongformplussponsorvragen.vercel.app/api/submit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   })
-  .then(res => res.json())
-  .then(data => {
-    console.log("Lead verzonden:", data);
-    return data; // return zodat .then() werkt
-  })
-  .catch(err => {
-    console.error("Verzendfout:", err);
-    throw err; // gooi fout door zodat .catch() extern werkt
-  });
+    .then(res => res.json())
+    .then(data => {
+      console.log("✅ Lead verzonden:", data);
+      return data;
+    })
+    .catch(err => {
+      console.error("❌ Verzendfout:", err);
+      throw err;
+    });
 }
+
 window.fetchLead = fetchLead;
 
 export default function setupFormSubmit() {
