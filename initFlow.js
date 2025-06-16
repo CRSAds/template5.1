@@ -5,9 +5,8 @@ import sponsorCampaigns from './sponsorCampaigns.js';
 import setupSovendus from './setupSovendus.js';
 import { fireFacebookLeadEventIfNeeded } from './facebookpixel.js';
 
-const longFormCampaigns = [];
-window.longFormCampaigns = longFormCampaigns;
 let hasSubmittedShortForm = false;
+window.longFormCampaigns = [];
 
 function validateForm(form) {
   let valid = true;
@@ -41,12 +40,10 @@ function validateForm(form) {
 }
 
 export default function initFlow() {
-  const longFormSection = document.getElementById('long-form-section');
   const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
+  const longFormSection = document.getElementById('long-form-section');
 
-  longFormCampaigns.length = 0;
-
-  // Alleen eerste sectie tonen bij load
+  // Verberg alle stappen behalve de eerste
   steps.forEach((el, i) => {
     el.style.display = i === 0 ? 'block' : 'none';
   });
@@ -57,6 +54,7 @@ export default function initFlow() {
   }
 
   steps.forEach((step, index) => {
+    // Flow-next knoppen
     step.querySelectorAll('.flow-next').forEach(btn => {
       btn.addEventListener('click', () => {
         const skipNext = btn.classList.contains('skip-next-section');
@@ -99,6 +97,7 @@ export default function initFlow() {
           if (isShortForm && !hasSubmittedShortForm) {
             hasSubmittedShortForm = true;
             const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"]);
+
             fetchLead(payload).then(() => {
               fireFacebookLeadEventIfNeeded();
               step.style.display = 'none';
@@ -115,6 +114,7 @@ export default function initFlow() {
           }
         }
 
+        // Toon volgende stap
         step.style.display = 'none';
         const next = skipNext ? steps[index + 2] : steps[index + 1];
         if (next) {
@@ -126,6 +126,7 @@ export default function initFlow() {
       });
     });
 
+    // Sponsoroptins
     step.querySelectorAll('.sponsor-optin').forEach(button => {
       button.addEventListener('click', () => {
         const campaignId = button.id;
@@ -139,11 +140,13 @@ export default function initFlow() {
           localStorage.setItem(campaign.coregAnswerKey, answer);
         }
 
+        // Als het een long form campagne is en er positief geantwoord is, NIET direct versturen
         if (campaign.requiresLongForm && isPositive) {
-          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-            longFormCampaigns.push(campaign);
+          if (!window.longFormCampaigns.find(c => c.cid === campaign.cid)) {
+            window.longFormCampaigns.push(campaign);
           }
         } else {
+          // Alleen verzenden bij geen long form
           const payload = buildPayload(campaign);
           fetchLead(payload);
         }
@@ -160,6 +163,7 @@ export default function initFlow() {
     });
   });
 
+  // Coreg flows
   Object.entries(sponsorCampaigns).forEach(([campaignId, config]) => {
     if (config.hasCoregFlow && config.coregAnswerKey) {
       initGenericCoregSponsorFlow(campaignId, config.coregAnswerKey);
@@ -167,16 +171,21 @@ export default function initFlow() {
   });
 }
 
-function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
-  const allSections = document.querySelectorAll(`[id^="campaign-${sponsorId}"]`);
-  const answers = [];
+// Coreg flow logica
+const coregAnswers = {};
+window.coregAnswers = coregAnswers;
 
+function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
+  coregAnswers[sponsorId] = [];
+
+  const allSections = document.querySelectorAll(`[id^="campaign-${sponsorId}"]`);
   allSections.forEach(section => {
     const buttons = section.querySelectorAll('.flow-next');
     buttons.forEach(button => {
       button.addEventListener('click', () => {
-        const answer = button.innerText.trim().toLowerCase();
-        answers.push(answer);
+        const answerText = button.innerText.trim();
+        coregAnswers[sponsorId].push(answerText);
+
         if (!button.classList.contains('sponsor-next')) return;
 
         let nextStepId = '';
@@ -189,9 +198,9 @@ function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
         section.style.display = 'none';
 
         if (nextStepId) {
-          const next = document.getElementById(nextStepId);
-          if (next) {
-            next.style.display = 'block';
+          const nextSection = document.getElementById(nextStepId);
+          if (nextSection) {
+            nextSection.style.display = 'block';
           }
         } else {
           handleGenericNextCoregSponsor();
