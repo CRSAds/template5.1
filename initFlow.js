@@ -152,21 +152,22 @@ export default function initFlow() {
           localStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
         }
 
-   if (campaign.requiresLongForm === true) {
-  if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-    console.log('✅ Long form sponsor geselecteerd:', campaignId);
-    longFormCampaigns.push(campaign);
-  }
-} else {
-  const payload = buildPayload(campaign);
-  fetchLead(payload);
-}
+        if (campaign.requiresLongForm === true) {
+          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+            console.log('✅ Long form sponsor geselecteerd:', campaignId);
+            longFormCampaigns.push(campaign);
+          }
+        } else {
+          const payload = buildPayload(campaign);
+          fetchLead(payload);
+        }
 
         step.style.display = 'none';
         const next = steps[index + 1];
         const upcomingCoregs = steps.slice(index + 1).filter(s => s.classList.contains('coreg-section'));
+        const allCoregsHandled = upcomingCoregs.length === 0;
 
-        if (upcomingCoregs.length === 0 && longFormSection) {
+        if (allCoregsHandled && longFormSection) {
           const alreadyHandled = longFormSection.getAttribute('data-displayed') === 'true';
 
           if (longFormCampaigns.length > 0 && !alreadyHandled) {
