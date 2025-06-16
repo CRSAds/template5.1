@@ -137,7 +137,8 @@ export default function initFlow() {
         }
 
         if (campaign.requiresLongForm && isPositive) {
-          button.classList.add('clicked');
+          document.querySelectorAll('.long-form-ja').forEach(b => b.classList.remove('clicked'));
+          button.classList.add('clicked', 'long-form-ja');
         } else {
           const payload = buildPayload(campaign);
           fetchLead(payload);
@@ -204,15 +205,17 @@ function handleGenericNextCoregSponsor() {
 
   const longFormSection = document.getElementById('long-form-section');
   const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
-  const longFormYesClicked = document.querySelector('.long-form-ja.clicked');
+  const yesButtons = Array.from(document.querySelectorAll('.long-form-ja.clicked'));
+  const validLongFormYes = yesButtons.length > 0;
 
   if (remaining.length === 0 && longFormSection) {
-    if (longFormYesClicked && !alreadyHandled) {
-      console.log('✅ Toon long form: positief antwoord gegeven');
+    if (validLongFormYes && !alreadyHandled) {
+      console.log('✅ Toon long form: positief antwoord op long form campagne');
       longFormSection.style.display = 'block';
       longFormSection.setAttribute('data-displayed', 'true');
       reloadImages(longFormSection);
     } else {
+      console.log('⛔️ Geen positief antwoord op long form campagnes → skippen');
       const next = longFormSection.nextElementSibling;
       if (next) {
         next.style.display = 'block';
