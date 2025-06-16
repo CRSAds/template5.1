@@ -5,6 +5,8 @@ import sponsorCampaigns from './sponsorCampaigns.js';
 import setupSovendus from './setupSovendus.js';
 import { fireFacebookLeadEventIfNeeded } from './facebookpixel.js';
 
+const longFormCampaigns = [];
+window.longFormCampaigns = longFormCampaigns;
 let hasSubmittedShortForm = false;
 
 function validateForm(form) {
@@ -42,7 +44,9 @@ export default function initFlow() {
   const longFormSection = document.getElementById('long-form-section');
   const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
 
-  // Hide alles behalve eerste sectie
+  longFormCampaigns.length = 0;
+
+  // Alleen eerste sectie tonen bij load
   steps.forEach((el, i) => {
     el.style.display = i === 0 ? 'block' : 'none';
   });
@@ -95,7 +99,6 @@ export default function initFlow() {
           if (isShortForm && !hasSubmittedShortForm) {
             hasSubmittedShortForm = true;
             const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"]);
-
             fetchLead(payload).then(() => {
               fireFacebookLeadEventIfNeeded();
               step.style.display = 'none';
@@ -136,16 +139,14 @@ export default function initFlow() {
           localStorage.setItem(campaign.coregAnswerKey, answer);
         }
 
-        if (campaign.requiresLongForm) {
-  if (isPositive) {
-    document.querySelectorAll('.long-form-ja').forEach(b => b.classList.remove('clicked'));
-    button.classList.add('clicked', 'long-form-ja');
-  }
-  // Let op: NIET versturen! Dat gebeurt pas in formSubmit.js
-} else {
-  const payload = buildPayload(campaign);
-  fetchLead(payload);
-}
+        if (campaign.requiresLongForm && isPositive) {
+          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+            longFormCampaigns.push(campaign);
+          }
+        } else {
+          const payload = buildPayload(campaign);
+          fetchLead(payload);
+        }
 
         step.style.display = 'none';
         const next = steps[index + 1];
@@ -208,17 +209,13 @@ function handleGenericNextCoregSponsor() {
 
   const longFormSection = document.getElementById('long-form-section');
   const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
-  const yesButtons = Array.from(document.querySelectorAll('.long-form-ja.clicked'));
-  const validLongFormYes = yesButtons.length > 0;
 
   if (remaining.length === 0 && longFormSection) {
-    if (validLongFormYes && !alreadyHandled) {
-      console.log('✅ Toon long form: positief antwoord op long form campagne');
+    if (window.longFormCampaigns.length > 0 && !alreadyHandled) {
       longFormSection.style.display = 'block';
       longFormSection.setAttribute('data-displayed', 'true');
       reloadImages(longFormSection);
     } else {
-      console.log('⛔️ Geen positief antwoord op long form campagnes → skippen');
       const next = longFormSection.nextElementSibling;
       if (next) {
         next.style.display = 'block';
