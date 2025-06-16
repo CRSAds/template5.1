@@ -1,4 +1,3 @@
-// initFlow.js
 import { reloadImages } from './imageFix.js';
 import { fetchLead, buildPayload } from './formSubmit.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
@@ -46,17 +45,18 @@ export default function initFlow() {
 
   longFormCampaigns.length = 0;
 
-  // 🛑 Forceer hide op long-form bij load
+  // ⛔️ Zorg dat long form initieel verborgen is
   if (longFormSection) {
     longFormSection.style.display = 'none';
     longFormSection.setAttribute('data-displayed', 'false');
   }
 
-  if (!window.location.hostname.includes("swipepages.com")) {
-    steps.forEach((el, i) => el.style.display = i === 0 ? 'block' : 'none');
-    document.querySelectorAll('.hide-on-live, #long-form-section').forEach(el => {
-      el.style.display = 'none';
+  // ✅ Alleen eerste sectie zichtbaar maken
+  if (window.location.hostname.includes("swipepages.com")) {
+    steps.forEach((el, i) => {
+      el.style.display = i === 0 ? 'block' : 'none';
     });
+    if (longFormSection) longFormSection.style.display = 'none';
   }
 
   steps.forEach((step, index) => {
@@ -141,20 +141,17 @@ export default function initFlow() {
           localStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
         }
 
-       const answer = button.innerText.trim();
-const isPositive = ['ja', 'yes', 'akkoord'].includes(answer.toLowerCase());
+        const answer = button.innerText.trim().toLowerCase();
+        const isPositive = ['ja', 'yes', 'akkoord'].includes(answer);
 
-const answer = button.innerText.trim().toLowerCase();
-const isPositive = ['ja', 'yes', 'akkoord'].includes(answer);
-
-if (campaign.requiresLongForm === true && isPositive) {
-  if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-    longFormCampaigns.push(campaign);
-  }
-} else {
-  const payload = buildPayload(campaign);
-  fetchLead(payload);
-}
+        if (campaign.requiresLongForm === true && isPositive) {
+          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+            longFormCampaigns.push(campaign);
+          }
+        } else {
+          const payload = buildPayload(campaign);
+          fetchLead(payload);
+        }
 
         step.style.display = 'none';
         const next = steps[index + 1];
@@ -174,6 +171,9 @@ if (campaign.requiresLongForm === true && isPositive) {
     }
   });
 }
+
+// ⬇️ Deze functie verandert niet
+// Zorgt ervoor dat het long form alleen verschijnt na alle coregs én alleen als er positieve longform sponsors zijn
 
 const coregAnswers = {};
 window.coregAnswers = coregAnswers;
@@ -239,7 +239,6 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
       longFormSection.setAttribute('data-displayed', 'true');
       reloadImages(longFormSection);
     } else {
-      // Skip long form → ga naar de volgende sectie
       const next = longFormSection.nextElementSibling;
       if (next) {
         next.style.display = 'block';
@@ -248,7 +247,6 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
       }
     }
   } else {
-    // Er zijn nog coregs over → ga naar volgende stap via flow-next
     const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
     flowNextBtn?.click();
   }
