@@ -33,23 +33,6 @@ function validateForm(form) {
     valid = messages.length === 0;
   }
 
-  if (form.id === 'long-form') {
-    const postcode = form.querySelector('#postcode')?.value.trim();
-    const straat = form.querySelector('#straat')?.value.trim();
-    const huisnummer = form.querySelector('#huisnummer')?.value.trim();
-    const woonplaats = form.querySelector('#woonplaats')?.value.trim();
-    const telefoon = form.querySelector('#telefoon')?.value.trim();
-
-    if (!postcode) messages.push('Postcode invullen');
-    if (!straat) messages.push('Straat invullen');
-    if (!huisnummer) messages.push('Huisnummer invullen');
-    if (!woonplaats) messages.push('Woonplaats invullen');
-    if (!telefoon) messages.push('Telefoonnummer invullen');
-    else if (telefoon.length > 11) messages.push('Telefoonnummer mag max. 11 tekens bevatten');
-
-    valid = messages.length === 0;
-  }
-
   if (!valid) {
     alert('Vul aub alle velden correct in:\n' + messages.join('\n'));
   }
@@ -235,17 +218,19 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
   const longFormSection = document.getElementById('long-form-section');
   const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
 
-  if (remaining.length === 0) {
+  if (remaining.length === 0 && longFormSection) {
     if (longFormCampaigns.length > 0 && !alreadyHandled) {
       console.log('🟧 Alle coregs klaar → long form tonen:', longFormCampaigns);
       longFormSection.style.display = 'block';
       longFormSection.setAttribute('data-displayed', 'true');
       reloadImages(longFormSection);
     } else {
-      const next = allCoregs[allCoregs.length - 1]?.nextElementSibling;
+      // Overslaan en doorgaan naar volgende stap
+      const next = longFormSection.nextElementSibling;
       if (next) {
         next.style.display = 'block';
         reloadImages(next);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
   }
