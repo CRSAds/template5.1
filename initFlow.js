@@ -1,3 +1,4 @@
+// initFlow.js
 import { reloadImages } from './imageFix.js';
 import { fetchLead, buildPayload } from './formSubmit.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
@@ -45,18 +46,18 @@ export default function initFlow() {
 
   longFormCampaigns.length = 0;
 
-  // ⛔️ Zorg dat long form initieel verborgen is
+  // 🛑 Forceer hide op long form + alle secties behalve de eerste bij pageload
+  steps.forEach((el, i) => {
+    if (i === 0) {
+      el.style.display = 'block';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+
   if (longFormSection) {
     longFormSection.style.display = 'none';
     longFormSection.setAttribute('data-displayed', 'false');
-  }
-
-  // ✅ Alleen eerste sectie zichtbaar maken
-  if (window.location.hostname.includes("swipepages.com")) {
-    steps.forEach((el, i) => {
-      el.style.display = i === 0 ? 'block' : 'none';
-    });
-    if (longFormSection) longFormSection.style.display = 'none';
   }
 
   steps.forEach((step, index) => {
@@ -137,14 +138,14 @@ export default function initFlow() {
         const campaign = sponsorCampaigns[campaignId];
         if (!campaign) return;
 
-        if (campaign.coregAnswerKey) {
-          localStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
-        }
-
         const answer = button.innerText.trim().toLowerCase();
         const isPositive = ['ja', 'yes', 'akkoord'].includes(answer);
 
-        if (campaign.requiresLongForm === true && isPositive) {
+        if (campaign.coregAnswerKey) {
+          localStorage.setItem(campaign.coregAnswerKey, answer);
+        }
+
+        if (campaign.requiresLongForm && isPositive) {
           if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
             longFormCampaigns.push(campaign);
           }
@@ -171,9 +172,6 @@ export default function initFlow() {
     }
   });
 }
-
-// ⬇️ Deze functie verandert niet
-// Zorgt ervoor dat het long form alleen verschijnt na alle coregs én alleen als er positieve longform sponsors zijn
 
 const coregAnswers = {};
 window.coregAnswers = coregAnswers;
