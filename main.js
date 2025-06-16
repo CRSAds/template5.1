@@ -17,8 +17,7 @@ setupFormSubmit();
       return new OriginalURL(url, base || window.location.origin);
     } catch (err) {
       console.warn("🔁 URL-fout opgevangen (Swipe Pages patch):", url);
-      // Retourneer een tijdelijke geldige URL om verdere fouten te voorkomen
-      return new OriginalURL('https://fallback.url');
+      return new OriginalURL(window.location.origin + window.location.pathname);
     }
   };
 
