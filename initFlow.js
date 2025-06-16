@@ -7,6 +7,7 @@ import { fireFacebookLeadEventIfNeeded } from './facebookpixel.js';
 
 const longFormCampaigns = [];
 window.longFormCampaigns = longFormCampaigns;
+let hasSubmittedShortForm = false;
 
 function validateForm(form) {
   let valid = true;
@@ -60,7 +61,6 @@ export default function initFlow() {
   const longFormSection = document.getElementById('long-form-section');
   const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
 
-  // ✅ Reset bij herladen
   longFormCampaigns.length = 0;
 
   if (!window.location.hostname.includes("swipepages.com")) {
@@ -110,7 +110,8 @@ export default function initFlow() {
           localStorage.setItem('email', email);
           localStorage.setItem('t_id', t_id);
 
-          if (isShortForm) {
+          if (isShortForm && !hasSubmittedShortForm) {
+            hasSubmittedShortForm = true;
             const includeSponsors = !(step.id === 'voorwaarden-section' && !btn.id);
             const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
 
@@ -163,22 +164,22 @@ export default function initFlow() {
         const next = steps[index + 1];
         const upcomingCoregs = steps.slice(index + 1).filter(s => s.classList.contains('coreg-section'));
 
-if (upcomingCoregs.length === 0 && longFormSection) {
-  const alreadyHandled = longFormSection.getAttribute('data-displayed') === 'true';
+        if (upcomingCoregs.length === 0 && longFormSection) {
+          const alreadyHandled = longFormSection.getAttribute('data-displayed') === 'true';
 
-  if (longFormCampaigns.length > 0 && !alreadyHandled) {
-    console.log('🟧 Long form tonen op basis van selectie:', longFormCampaigns);
-    longFormSection.style.display = 'block';
-    longFormSection.setAttribute('data-displayed', 'true');
-    reloadImages(longFormSection);
-  } else if (next) {
-    next.style.display = 'block';
-    reloadImages(next);
-  }
-} else if (next) {
-  next.style.display = 'block';
-  reloadImages(next);
-}
+          if (longFormCampaigns.length > 0 && !alreadyHandled) {
+            console.log('🟧 Long form tonen op basis van selectie:', longFormCampaigns);
+            longFormSection.style.display = 'block';
+            longFormSection.setAttribute('data-displayed', 'true');
+            reloadImages(longFormSection);
+          } else if (next) {
+            next.style.display = 'block';
+            reloadImages(next);
+          }
+        } else if (next) {
+          next.style.display = 'block';
+          reloadImages(next);
+        }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
