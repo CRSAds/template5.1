@@ -141,14 +141,17 @@ export default function initFlow() {
           localStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
         }
 
-        if (campaign.requiresLongForm === true) {
-          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-            longFormCampaigns.push(campaign);
-          }
-        } else {
-          const payload = buildPayload(campaign);
-          fetchLead(payload);
-        }
+       const answer = button.innerText.trim();
+const isPositive = ['ja', 'yes', 'akkoord'].includes(answer.toLowerCase());
+
+if (campaign.requiresLongForm === true && isPositive) {
+  if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+    longFormCampaigns.push(campaign);
+  }
+} else {
+  const payload = buildPayload(campaign);
+  fetchLead(payload);
+}
 
         step.style.display = 'none';
         const next = steps[index + 1];
