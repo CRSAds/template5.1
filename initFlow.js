@@ -1,3 +1,4 @@
+// initFlow.js
 import { reloadImages } from './imageFix.js';
 import { fetchLead, buildPayload } from './formSubmit.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
@@ -5,7 +6,8 @@ import setupSovendus from './setupSovendus.js';
 import { fireFacebookLeadEventIfNeeded } from './facebookpixel.js';
 
 let hasSubmittedShortForm = false;
-window.longFormCampaigns = [];
+const longFormCampaigns = [];
+window.longFormCampaigns = longFormCampaigns;
 
 function validateForm(form) {
   let valid = true;
@@ -39,10 +41,10 @@ function validateForm(form) {
 }
 
 export default function initFlow() {
-  const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
   const longFormSection = document.getElementById('long-form-section');
+  const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
 
-  // Initialisatie
+  // Bij load → alleen eerste sectie zichtbaar
   steps.forEach((el, i) => {
     el.style.display = i === 0 ? 'block' : 'none';
   });
@@ -52,7 +54,6 @@ export default function initFlow() {
     longFormSection.setAttribute('data-displayed', 'false');
   }
 
-  // Eventlisteners voor flow stappen
   steps.forEach((step, index) => {
     step.querySelectorAll('.flow-next').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -96,7 +97,6 @@ export default function initFlow() {
           if (isShortForm && !hasSubmittedShortForm) {
             hasSubmittedShortForm = true;
             const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"]);
-
             fetchLead(payload).then(() => {
               fireFacebookLeadEventIfNeeded();
               step.style.display = 'none';
@@ -108,7 +108,6 @@ export default function initFlow() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             });
-
             return;
           }
         }
@@ -124,7 +123,6 @@ export default function initFlow() {
       });
     });
 
-    // Sponsor JA/NEE clicks
     step.querySelectorAll('.sponsor-optin').forEach(button => {
       button.addEventListener('click', () => {
         const campaignId = button.id;
@@ -133,31 +131,21 @@ export default function initFlow() {
 
         const answer = button.innerText.trim().toLowerCase();
         const isPositive = ['ja', 'yes', 'akkoord'].includes(answer);
-        const requiresLongForm = String(campaign.requiresLongForm).toLowerCase() === 'true';
 
         if (campaign.coregAnswerKey) {
           localStorage.setItem(campaign.coregAnswerKey, answer);
         }
 
-   if (requiresLongForm) {
-  if (isPositive) {
-    // Uitstel tot long form wordt ingevuld
-    if (!window.longFormCampaigns.find(c => c.cid === campaign.cid)) {
-      window.longFormCampaigns.push(campaign);
-      console.log('⏳ Long form vereist → lead uitgesteld:', campaignId);
-    }
-  } else {
-    // Negatief antwoord → geen long form → direct versturen
-    const payload = buildPayload(campaign);
-    fetchLead(payload);
-    console.log('🚀 Lead direct verzonden (NEE bij long form):', campaignId);
-  }
-} else {
-  // Gewone campagne → direct versturen
-  const payload = buildPayload(campaign);
-  fetchLead(payload);
-  console.log('🚀 Lead direct verzonden:', campaignId);
-}
+        if (campaign.requiresLongForm && isPositive) {
+          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+            longFormCampaigns.push(campaign);
+          }
+          // ⛔️ Geen fetchLead, pas na long form
+        } else {
+          const payload = buildPayload(campaign);
+          console.log("✅ Lead direct verzonden (NEE bij long form):", campaignId);
+          fetchLead(payload);
+        }
 
         step.style.display = 'none';
         const next = steps[index + 1];
@@ -170,4 +158,70 @@ export default function initFlow() {
       });
     });
   });
+
+  Object.entries(sponsorCampaigns).forEach(([campaignId, config]) => {
+    if (config.hasCoregFlow && config.coregAnswerKey) {
+      initGenericCoregSponsorFlow(campaignId, config.coregAnswerKey);
+    }
+  });
+}
+
+function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
+  const allSections = document.querySelectorAll(`[id^="campaign-${sponsorId}"]`);
+  const answers = [];
+
+  allSections.forEach(section => {
+    const buttons = section.querySelectorAll('.flow-next');
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        const answer = button.innerText.trim().toLowerCase();
+        answers.push(answer);
+        if (!button.classList.contains('sponsor-next')) return;
+
+        let nextStepId = '';
+        button.classList.forEach(cls => {
+          if (cls.startsWith('next-step-')) {
+            nextStepId = cls.replace('next-step-', '');
+          }
+        });
+
+        section.style.display = 'none';
+
+        if (nextStepId) {
+          const next = document.getElementById(nextStepId);
+          if (next) {
+            next.style.display = 'block';
+          }
+        } else {
+          handleGenericNextCoregSponsor();
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  });
+}
+
+function handleGenericNextCoregSponsor() {
+  const allCoregs = Array.from(document.querySelectorAll('.coreg-section'));
+  const remaining = allCoregs.filter(s => window.getComputedStyle(s).display !== 'none');
+
+  const longFormSection = document.getElementById('long-form-section');
+  const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
+
+  if (remaining.length === 0 && longFormSection) {
+    if (window.longFormCampaigns.length > 0 && !alreadyHandled) {
+      console.log('✅ Toon long form: op basis van positief antwoord');
+      longFormSection.style.display = 'block';
+      longFormSection.setAttribute('data-displayed', 'true');
+      reloadImages(longFormSection);
+    } else {
+      const next = longFormSection.nextElementSibling;
+      if (next) {
+        next.style.display = 'block';
+        reloadImages(next);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  }
 }
