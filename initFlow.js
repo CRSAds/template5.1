@@ -136,13 +136,16 @@ export default function initFlow() {
           localStorage.setItem(campaign.coregAnswerKey, answer);
         }
 
-        if (campaign.requiresLongForm && isPositive) {
-          document.querySelectorAll('.long-form-ja').forEach(b => b.classList.remove('clicked'));
-          button.classList.add('clicked', 'long-form-ja');
-        } else {
-          const payload = buildPayload(campaign);
-          fetchLead(payload);
-        }
+        if (campaign.requiresLongForm) {
+  if (isPositive) {
+    document.querySelectorAll('.long-form-ja').forEach(b => b.classList.remove('clicked'));
+    button.classList.add('clicked', 'long-form-ja');
+  }
+  // Let op: NIET versturen! Dat gebeurt pas in formSubmit.js
+} else {
+  const payload = buildPayload(campaign);
+  fetchLead(payload);
+}
 
         step.style.display = 'none';
         const next = steps[index + 1];
