@@ -46,6 +46,12 @@ export default function initFlow() {
 
   longFormCampaigns.length = 0;
 
+  // 🛑 Forceer hide op long-form bij load
+  if (longFormSection) {
+    longFormSection.style.display = 'none';
+    longFormSection.setAttribute('data-displayed', 'false');
+  }
+
   if (!window.location.hostname.includes("swipepages.com")) {
     steps.forEach((el, i) => el.style.display = i === 0 ? 'block' : 'none');
     document.querySelectorAll('.hide-on-live, #long-form-section').forEach(el => {
@@ -224,13 +230,8 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
       longFormSection.style.display = 'block';
       longFormSection.setAttribute('data-displayed', 'true');
       reloadImages(longFormSection);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // Overslaan en doorgaan naar eerstvolgende zichtbare sectie na long form
-      let next = longFormSection.nextElementSibling;
-      while (next && window.getComputedStyle(next).display === 'none') {
-        next = next.nextElementSibling;
-      }
+      const next = longFormSection.nextElementSibling;
       if (next) {
         next.style.display = 'block';
         reloadImages(next);
