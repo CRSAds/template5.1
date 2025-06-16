@@ -164,14 +164,18 @@ export default function initFlow() {
         const upcomingCoregs = steps.slice(index + 1).filter(s => s.classList.contains('coreg-section'));
 
         if (upcomingCoregs.length === 0 && longFormSection) {
-          if (longFormCampaigns.length > 0) {
-            console.log('🟧 Long form wordt getoond – campaigns:', longFormCampaigns);
-            longFormSection.style.display = 'block';
-            reloadImages(longFormSection);
-          } else if (next) {
-            next.style.display = 'block';
-            reloadImages(next);
-          }
+  const alreadyHandled = longFormSection.getAttribute('data-displayed') === 'true';
+
+  if (longFormCampaigns.length > 0 && !alreadyHandled) {
+    console.log('🟧 Long form tonen op basis van selectie:', longFormCampaigns);
+    longFormSection.style.display = 'block';
+    longFormSection.setAttribute('data-displayed', 'true');
+    reloadImages(longFormSection);
+  } else if (next) {
+    next.style.display = 'block';
+    reloadImages(next);
+  }
+}
         } else if (next) {
           next.style.display = 'block';
           reloadImages(next);
