@@ -139,16 +139,25 @@ export default function initFlow() {
           localStorage.setItem(campaign.coregAnswerKey, answer);
         }
 
-        if (isPositive && requiresLongForm) {
-          if (!window.longFormCampaigns.find(c => c.cid === campaign.cid)) {
-            window.longFormCampaigns.push(campaign);
-            console.log('⏳ Long form vereist → lead uitgesteld:', campaignId);
-          }
-        } else {
-          const payload = buildPayload(campaign);
-          fetchLead(payload);
-          console.log('🚀 Lead direct verzonden:', campaignId);
-        }
+   if (requiresLongForm) {
+  if (isPositive) {
+    // Uitstel tot long form wordt ingevuld
+    if (!window.longFormCampaigns.find(c => c.cid === campaign.cid)) {
+      window.longFormCampaigns.push(campaign);
+      console.log('⏳ Long form vereist → lead uitgesteld:', campaignId);
+    }
+  } else {
+    // Negatief antwoord → geen long form → direct versturen
+    const payload = buildPayload(campaign);
+    fetchLead(payload);
+    console.log('🚀 Lead direct verzonden (NEE bij long form):', campaignId);
+  }
+} else {
+  // Gewone campagne → direct versturen
+  const payload = buildPayload(campaign);
+  fetchLead(payload);
+  console.log('🚀 Lead direct verzonden:', campaignId);
+}
 
         step.style.display = 'none';
         const next = steps[index + 1];
