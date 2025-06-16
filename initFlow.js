@@ -162,10 +162,10 @@ export default function initFlow() {
           fetchLead(payload);
         }
 
-          const remainingCoregs = steps.slice(index + 1).some(s =>
-            s.classList.contains('coreg-section') && s.style.display !== 'none'
-          );
-          const allCoregsHandled = !remainingCoregs;
+const remainingCoregs = steps.slice(index).some((s, i) =>
+  i !== 0 && s.classList.contains('coreg-section') && s.style.display !== 'none'
+);
+const allCoregsHandled = !remainingCoregs;
 
         if (allCoregsHandled && longFormSection) {
           const alreadyHandled = longFormSection.getAttribute('data-displayed') === 'true';
