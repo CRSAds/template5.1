@@ -2,17 +2,16 @@
 import { reloadImages } from './imageFix.js';
 import { fetchLead, buildPayload } from './formSubmit.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
-import setupSovendus from './setupSovendus.js';
-import { fireFacebookLeadEventIfNeeded } from './facebookpixel.js';
 
-let hasSubmittedShortForm = false;
 const longFormCampaigns = [];
 window.longFormCampaigns = longFormCampaigns;
 
+// ✅ VALIDATE FORM FUNCTIE
 function validateForm(form) {
   let valid = true;
   let messages = [];
 
+  // SHORT FORM → lead-form
   if (form.id === 'lead-form') {
     const gender = form.querySelector('input[name="gender"]:checked');
     const firstname = form.querySelector('#firstname')?.value.trim();
@@ -22,15 +21,13 @@ function validateForm(form) {
     const dob_year = form.querySelector('#dob-year')?.value.trim();
     const email = form.querySelector('#email')?.value.trim();
 
-    if (!gender) messages.push('Geslacht invullen');
-    if (!firstname) messages.push('Voornaam invullen');
-    if (!lastname) messages.push('Achternaam invullen');
-    if (!dob_day || !dob_month || !dob_year) messages.push('Geboortedatum invullen');
+    if (!gender) { valid = false; messages.push('Geslacht invullen'); }
+    if (!firstname) { valid = false; messages.push('Voornaam invullen'); }
+    if (!lastname) { valid = false; messages.push('Achternaam invullen'); }
+    if (!dob_day || !dob_month || !dob_year) { valid = false; messages.push('Geboortedatum invullen'); }
     if (!email || !email.includes('@') || !email.includes('.')) {
-      messages.push('Geldig e-mailadres invullen');
+      valid = false; messages.push('Geldig e-mailadres invullen');
     }
-
-    valid = messages.length === 0;
   }
 
   if (!valid) {
@@ -44,21 +41,23 @@ export default function initFlow() {
   const longFormSection = document.getElementById('long-form-section');
   const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
 
-  steps.forEach((el, i) => el.style.display = i === 0 ? 'block' : 'none');
-
-  if (longFormSection) {
-    longFormSection.style.display = 'none';
-    longFormSection.setAttribute('data-displayed', 'false');
+  if (!window.location.hostname.includes("swipepages.com")) {
+    steps.forEach((el, i) => el.style.display = i === 0 ? 'block' : 'none');
+    document.querySelectorAll('.hide-on-live, #long-form-section').forEach(el => {
+      el.style.display = 'none';
+    });
   }
 
   steps.forEach((step, index) => {
+    // FLOW-NEXT HANDLER
     step.querySelectorAll('.flow-next').forEach(btn => {
       btn.addEventListener('click', () => {
         const skipNext = btn.classList.contains('skip-next-section');
+
         const campaignId = step.id?.startsWith('campaign-') ? step.id : null;
         const campaign = sponsorCampaigns[campaignId];
 
-        if (campaign?.coregAnswerKey && btn.classList.contains('sponsor-next')) {
+        if (campaign && campaign.coregAnswerKey && btn.classList.contains('sponsor-next')) {
           localStorage.setItem(campaign.coregAnswerKey, btn.innerText.trim());
         }
 
@@ -91,49 +90,37 @@ export default function initFlow() {
           localStorage.setItem('email', email);
           localStorage.setItem('t_id', t_id);
 
-          if (isShortForm && !hasSubmittedShortForm) {
-            hasSubmittedShortForm = true;
-            const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"]);
-            fetchLead(payload).then(() => {
-              fireFacebookLeadEventIfNeeded();
-              step.style.display = 'none';
-              const next = skipNext ? steps[index + 2] : steps[index + 1];
-              if (next) {
-                next.style.display = 'block';
-                if (next.id === 'sovendus-section') setupSovendus();
-                reloadImages(next);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-            });
-            return;
+          if (isShortForm) {
+            const includeSponsors = !(step.id === 'voorwaarden-section' && !btn.id);
+            const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
+            fetchLead(payload);
           }
         }
 
         step.style.display = 'none';
         const next = skipNext ? steps[index + 2] : steps[index + 1];
+
         if (next) {
           next.style.display = 'block';
-          if (next.id === 'sovendus-section') setupSovendus();
           reloadImages(next);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
 
+    // SPONSOR-OPTIN HANDLER
     step.querySelectorAll('.sponsor-optin').forEach(button => {
       button.addEventListener('click', () => {
         const campaignId = button.id;
         const campaign = sponsorCampaigns[campaignId];
         if (!campaign) return;
 
-        const answer = button.innerText.trim().toLowerCase();
-        const isPositive = ['ja', 'yes', 'akkoord'].includes(answer);
-
         if (campaign.coregAnswerKey) {
-          localStorage.setItem(campaign.coregAnswerKey, answer);
+          localStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
         }
 
-        if (campaign.requiresLongForm && isPositive) {
+        if (campaign.requiresLongForm) {
           if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
             longFormCampaigns.push(campaign);
           }
@@ -144,7 +131,17 @@ export default function initFlow() {
 
         step.style.display = 'none';
         const next = steps[index + 1];
-        if (next) {
+        const upcomingCoregs = steps.slice(index + 1).filter(s => s.classList.contains('coreg-section'));
+
+        if (upcomingCoregs.length === 0 && longFormSection) {
+          if (longFormCampaigns.length > 0) {
+            longFormSection.style.display = 'block';
+            reloadImages(longFormSection);
+          } else if (next) {
+            next.style.display = 'block';
+            reloadImages(next);
+          }
+        } else if (next) {
           next.style.display = 'block';
           reloadImages(next);
         }
@@ -153,4 +150,61 @@ export default function initFlow() {
       });
     });
   });
+
+  Object.entries(sponsorCampaigns).forEach(([campaignId, config]) => {
+    if (config.hasCoregFlow && config.coregAnswerKey) {
+      initGenericCoregSponsorFlow(campaignId, config.coregAnswerKey);
+    }
+  });
+}
+
+const coregAnswers = {};
+window.coregAnswers = coregAnswers;
+
+function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
+  coregAnswers[sponsorId] = [];
+
+  const allSections = document.querySelectorAll(`[id^="campaign-${sponsorId}"]`);
+  allSections.forEach(section => {
+    const buttons = section.querySelectorAll('.flow-next');
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        const answerText = button.innerText.trim();
+        coregAnswers[sponsorId].push(answerText);
+
+        if (!button.classList.contains('sponsor-next')) return;
+
+        let nextStepId = '';
+        button.classList.forEach(cls => {
+          if (cls.startsWith('next-step-')) {
+            nextStepId = cls.replace('next-step-', '');
+          }
+        });
+
+        section.style.display = 'none';
+
+        if (nextStepId) {
+          const nextSection = document.getElementById(nextStepId);
+          if (nextSection) {
+            nextSection.style.display = 'block';
+          } else {
+            handleGenericNextCoregSponsor(sponsorId, coregAnswerKey);
+          }
+        } else {
+          handleGenericNextCoregSponsor(sponsorId, coregAnswerKey);
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  });
+}
+
+function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
+  const combinedAnswer = coregAnswers[sponsorId].join(' - ');
+  localStorage.setItem(coregAnswerKey, combinedAnswer);
+
+  const currentCoregSection = document.querySelector(`.coreg-section[style*="display: block"]`);
+  const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
+  flowNextBtn?.click();
 }
