@@ -5,8 +5,6 @@ import sponsorCampaigns from './sponsorCampaigns.js';
 import setupSovendus from './setupSovendus.js';
 import { fireFacebookLeadEventIfNeeded } from './facebookpixel.js';
 
-const longFormCampaigns = [];
-window.longFormCampaigns = longFormCampaigns;
 let hasSubmittedShortForm = false;
 
 function validateForm(form) {
@@ -44,15 +42,9 @@ export default function initFlow() {
   const longFormSection = document.getElementById('long-form-section');
   const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
 
-  longFormCampaigns.length = 0;
-
-  // 🛑 Forceer hide op long form + alle secties behalve de eerste bij pageload
+  // Hide alles behalve eerste sectie
   steps.forEach((el, i) => {
-    if (i === 0) {
-      el.style.display = 'block';
-    } else {
-      el.style.display = 'none';
-    }
+    el.style.display = i === 0 ? 'block' : 'none';
   });
 
   if (longFormSection) {
@@ -67,7 +59,7 @@ export default function initFlow() {
         const campaignId = step.id?.startsWith('campaign-') ? step.id : null;
         const campaign = sponsorCampaigns[campaignId];
 
-        if (campaign && campaign.coregAnswerKey && btn.classList.contains('sponsor-next')) {
+        if (campaign?.coregAnswerKey && btn.classList.contains('sponsor-next')) {
           localStorage.setItem(campaign.coregAnswerKey, btn.innerText.trim());
         }
 
@@ -102,8 +94,7 @@ export default function initFlow() {
 
           if (isShortForm && !hasSubmittedShortForm) {
             hasSubmittedShortForm = true;
-            const includeSponsors = !(step.id === 'voorwaarden-section' && !btn.id);
-            const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
+            const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"]);
 
             fetchLead(payload).then(() => {
               fireFacebookLeadEventIfNeeded();
@@ -146,9 +137,7 @@ export default function initFlow() {
         }
 
         if (campaign.requiresLongForm && isPositive) {
-          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-            longFormCampaigns.push(campaign);
-          }
+          button.classList.add('clicked');
         } else {
           const payload = buildPayload(campaign);
           fetchLead(payload);
@@ -173,20 +162,16 @@ export default function initFlow() {
   });
 }
 
-const coregAnswers = {};
-window.coregAnswers = coregAnswers;
-
 function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
-  coregAnswers[sponsorId] = [];
-
   const allSections = document.querySelectorAll(`[id^="campaign-${sponsorId}"]`);
+  const answers = [];
+
   allSections.forEach(section => {
     const buttons = section.querySelectorAll('.flow-next');
     buttons.forEach(button => {
       button.addEventListener('click', () => {
-        const answerText = button.innerText.trim();
-        coregAnswers[sponsorId].push(answerText);
-
+        const answer = button.innerText.trim().toLowerCase();
+        answers.push(answer);
         if (!button.classList.contains('sponsor-next')) return;
 
         let nextStepId = '';
@@ -199,14 +184,12 @@ function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
         section.style.display = 'none';
 
         if (nextStepId) {
-          const nextSection = document.getElementById(nextStepId);
-          if (nextSection) {
-            nextSection.style.display = 'block';
-          } else {
-            handleGenericNextCoregSponsor(sponsorId, coregAnswerKey);
+          const next = document.getElementById(nextStepId);
+          if (next) {
+            next.style.display = 'block';
           }
         } else {
-          handleGenericNextCoregSponsor(sponsorId, coregAnswerKey);
+          handleGenericNextCoregSponsor();
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -215,24 +198,17 @@ function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
   });
 }
 
-function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
-  const combinedAnswer = coregAnswers[sponsorId].join(' - ');
-  localStorage.setItem(coregAnswerKey, combinedAnswer);
-
-  const currentCoregSection = document.querySelector(`.coreg-section[style*="display: block"]`);
-  const allSteps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
-  const currentIdx = allSteps.findIndex(s => s === currentCoregSection);
-
-  const remainingCoregs = allSteps.slice(currentIdx + 1).filter(
-    s => s.classList.contains('coreg-section') && window.getComputedStyle(s).display !== 'none'
-  );
+function handleGenericNextCoregSponsor() {
+  const allCoregs = Array.from(document.querySelectorAll('.coreg-section'));
+  const remaining = allCoregs.filter(s => window.getComputedStyle(s).display !== 'none');
 
   const longFormSection = document.getElementById('long-form-section');
   const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
+  const longFormYesClicked = document.querySelector('.long-form-ja.clicked');
 
-  if (remainingCoregs.length === 0 && longFormSection) {
-    if (longFormCampaigns.length > 0 && !alreadyHandled) {
-      console.log('🟧 Alle coregs klaar → long form tonen:', longFormCampaigns);
+  if (remaining.length === 0 && longFormSection) {
+    if (longFormYesClicked && !alreadyHandled) {
+      console.log('✅ Toon long form: positief antwoord gegeven');
       longFormSection.style.display = 'block';
       longFormSection.setAttribute('data-displayed', 'true');
       reloadImages(longFormSection);
@@ -244,8 +220,5 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
-  } else {
-    const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
-    flowNextBtn?.click();
   }
 }
