@@ -11,7 +11,7 @@ let hasSubmittedShortForm = false;
 
 function validateForm(form) {
   let valid = true;
-  const messages = [];
+  let messages = [];
 
   if (form.id === 'lead-form') {
     const gender = form.querySelector('input[name="gender"]:checked');
@@ -26,7 +26,9 @@ function validateForm(form) {
     if (!firstname) messages.push('Voornaam invullen');
     if (!lastname) messages.push('Achternaam invullen');
     if (!dob_day || !dob_month || !dob_year) messages.push('Geboortedatum invullen');
-    if (!email || !email.includes('@') || !email.includes('.')) messages.push('Geldig e-mailadres invullen');
+    if (!email || !email.includes('@') || !email.includes('.')) {
+      messages.push('Geldig e-mailadres invullen');
+    }
 
     valid = messages.length === 0;
   }
@@ -75,7 +77,7 @@ export default function initFlow() {
         const campaignId = step.id?.startsWith('campaign-') ? step.id : null;
         const campaign = sponsorCampaigns[campaignId];
 
-        if (campaign?.coregAnswerKey && btn.classList.contains('sponsor-next')) {
+        if (campaign && campaign.coregAnswerKey && btn.classList.contains('sponsor-next')) {
           localStorage.setItem(campaign.coregAnswerKey, btn.innerText.trim());
         }
 
@@ -226,18 +228,30 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
 
   const currentCoregSection = document.querySelector(`.coreg-section[style*="display: block"]`);
   const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
-  flowNextBtn?.click();
+  if (flowNextBtn) flowNextBtn.click();
 
-  // ✅ Laat long form pas zien als alle coregs afgehandeld zijn
   const allCoregs = Array.from(document.querySelectorAll('.coreg-section'));
   const remaining = allCoregs.filter(section => section.style.display !== 'none');
   const longFormSection = document.getElementById('long-form-section');
-
   const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
-  if (remaining.length === 0 && longFormCampaigns.length > 0 && !alreadyHandled) {
-    console.log('🟧 Alle coregs klaar → long form tonen:', longFormCampaigns);
-    longFormSection.style.display = 'block';
-    longFormSection.setAttribute('data-displayed', 'true');
-    reloadImages(longFormSection);
+
+  if (remaining.length === 0 && longFormSection && !alreadyHandled) {
+    if (longFormCampaigns.length > 0) {
+      console.log('🟧 Alle coregs klaar → long form tonen:', longFormCampaigns);
+      longFormSection.style.display = 'block';
+      longFormSection.setAttribute('data-displayed', 'true');
+      reloadImages(longFormSection);
+    } else {
+      console.log('⏭ Geen long form sponsor → long form overslaan');
+      const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
+      const idx = steps.findIndex(s => s.id === 'long-form-section');
+      const next = steps[idx + 1];
+      if (next) {
+        next.classList.remove('hide-on-live');
+        next.style.removeProperty('display');
+        reloadImages(next);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
   }
 }
