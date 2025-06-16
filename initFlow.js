@@ -154,7 +154,6 @@ export default function initFlow() {
 
         if (campaign.requiresLongForm === true) {
           if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-            console.log('✅ Long form sponsor geselecteerd:', campaignId);
             longFormCampaigns.push(campaign);
           }
         } else {
@@ -232,22 +231,22 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
   flowNextBtn?.click();
 
   const allCoregs = Array.from(document.querySelectorAll('.coreg-section'));
-  const remaining = allCoregs.filter(section => section.style.display !== 'none');
+  const remaining = allCoregs.filter(section => window.getComputedStyle(section).display !== 'none');
   const longFormSection = document.getElementById('long-form-section');
   const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
 
-  if (remaining.length === 0 && longFormCampaigns.length > 0 && !alreadyHandled) {
-    console.log('🟧 Alle coregs klaar → long form tonen:', longFormCampaigns);
-    longFormSection.style.display = 'block';
-    longFormSection.setAttribute('data-displayed', 'true');
-    reloadImages(longFormSection);
-  } else if (remaining.length === 0 && longFormCampaigns.length === 0) {
-    const next = longFormSection?.nextElementSibling;
-    if (next) {
-      next.classList.remove('hide-on-live');
-      next.style.display = 'block';
-      reloadImages(next);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (remaining.length === 0) {
+    if (longFormCampaigns.length > 0 && !alreadyHandled) {
+      console.log('🟧 Alle coregs klaar → long form tonen:', longFormCampaigns);
+      longFormSection.style.display = 'block';
+      longFormSection.setAttribute('data-displayed', 'true');
+      reloadImages(longFormSection);
+    } else {
+      const next = allCoregs[allCoregs.length - 1]?.nextElementSibling;
+      if (next) {
+        next.style.display = 'block';
+        reloadImages(next);
+      }
     }
   }
 }
