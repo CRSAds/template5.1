@@ -5,101 +5,44 @@ import sponsorCampaigns from './sponsorCampaigns.js';
 
 const longFormCampaigns = [];
 window.longFormCampaigns = longFormCampaigns;
-
-// ✅ VALIDATE FORM FUNCTIE
-function validateForm(form) {
-  let valid = true;
-  let messages = [];
-
-  // SHORT FORM → lead-form
-  if (form.id === 'lead-form') {
-    const gender = form.querySelector('input[name="gender"]:checked');
-    const firstname = form.querySelector('#firstname')?.value.trim();
-    const lastname = form.querySelector('#lastname')?.value.trim();
-    const dob_day = form.querySelector('#dob-day')?.value.trim();
-    const dob_month = form.querySelector('#dob-month')?.value.trim();
-    const dob_year = form.querySelector('#dob-year')?.value.trim();
-    const email = form.querySelector('#email')?.value.trim();
-
-    if (!gender) { valid = false; messages.push('Geslacht invullen'); }
-    if (!firstname) { valid = false; messages.push('Voornaam invullen'); }
-    if (!lastname) { valid = false; messages.push('Achternaam invullen'); }
-    if (!dob_day || !dob_month || !dob_year) { valid = false; messages.push('Geboortedatum invullen'); }
-    if (!email || !email.includes('@') || !email.includes('.')) {
-      valid = false; messages.push('Geldig e-mailadres invullen');
-    }
-  }
-
-  if (!valid) {
-    alert('Vul aub alle velden correct in:\n' + messages.join('\n'));
-  }
-
-  return valid;
-}
+const coregAnswers = {};
+window.coregAnswers = coregAnswers;
 
 export default function initFlow() {
   const longFormSection = document.getElementById('long-form-section');
   const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
 
-  if (!window.location.hostname.includes("swipepages.com")) {
-    steps.forEach((el, i) => el.style.display = i === 0 ? 'block' : 'none');
-    document.querySelectorAll('.hide-on-live, #long-form-section').forEach(el => {
-      el.style.display = 'none';
-    });
+  steps.forEach((el, i) => {
+    el.style.display = i === 0 ? 'block' : 'none';
+  });
+
+  if (longFormSection) {
+    longFormSection.style.display = 'none';
+    longFormSection.setAttribute('data-displayed', 'false');
   }
 
   steps.forEach((step, index) => {
-    // FLOW-NEXT HANDLER
     step.querySelectorAll('.flow-next').forEach(btn => {
       btn.addEventListener('click', () => {
         const skipNext = btn.classList.contains('skip-next-section');
-
         const campaignId = step.id?.startsWith('campaign-') ? step.id : null;
         const campaign = sponsorCampaigns[campaignId];
 
-        if (campaign && campaign.coregAnswerKey && btn.classList.contains('sponsor-next')) {
+        if (campaign?.coregAnswerKey && btn.classList.contains('sponsor-next')) {
           localStorage.setItem(campaign.coregAnswerKey, btn.innerText.trim());
         }
 
-        if (step.id === 'voorwaarden-section' && !btn.id) {
-          localStorage.removeItem('sponsor_optin');
-        }
-
         const form = step.querySelector('form');
-        const isShortForm = form?.id === 'lead-form';
+        if (form && form.id === 'lead-form' && !validateShortForm(form)) return;
 
-        if (form && !validateForm(form)) return;
-
-        if (form) {
-          const gender = form.querySelector('input[name="gender"]:checked')?.value || '';
-          const firstname = form.querySelector('#firstname')?.value.trim() || '';
-          const lastname = form.querySelector('#lastname')?.value.trim() || '';
-          const dob_day = form.querySelector('#dob-day')?.value || '';
-          const dob_month = form.querySelector('#dob-month')?.value || '';
-          const dob_year = form.querySelector('#dob-year')?.value || '';
-          const email = form.querySelector('#email')?.value.trim() || '';
-          const urlParams = new URLSearchParams(window.location.search);
-          const t_id = urlParams.get('t_id') || crypto.randomUUID();
-
-          localStorage.setItem('gender', gender);
-          localStorage.setItem('firstname', firstname);
-          localStorage.setItem('lastname', lastname);
-          localStorage.setItem('dob_day', dob_day);
-          localStorage.setItem('dob_month', dob_month);
-          localStorage.setItem('dob_year', dob_year);
-          localStorage.setItem('email', email);
-          localStorage.setItem('t_id', t_id);
-
-          if (isShortForm) {
-            const includeSponsors = !(step.id === 'voorwaarden-section' && !btn.id);
-            const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
-            fetchLead(payload);
-          }
+        // Shortform lead versturen
+        if (form && form.id === 'lead-form') {
+          const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"]);
+          fetchLead(payload);
         }
 
         step.style.display = 'none';
         const next = skipNext ? steps[index + 2] : steps[index + 1];
-
         if (next) {
           next.style.display = 'block';
           reloadImages(next);
@@ -109,21 +52,24 @@ export default function initFlow() {
       });
     });
 
-    // SPONSOR-OPTIN HANDLER
     step.querySelectorAll('.sponsor-optin').forEach(button => {
       button.addEventListener('click', () => {
         const campaignId = button.id;
         const campaign = sponsorCampaigns[campaignId];
         if (!campaign) return;
 
+        const answer = button.innerText.trim().toLowerCase();
+        const isPositive = ['ja', 'yes', 'akkoord'].includes(answer);
+
         if (campaign.coregAnswerKey) {
-          localStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
+          localStorage.setItem(campaign.coregAnswerKey, answer);
         }
 
-        if (campaign.requiresLongForm) {
+        if (campaign.requiresLongForm && isPositive) {
           if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
             longFormCampaigns.push(campaign);
           }
+          // ⛔️ géén fetchLead
         } else {
           const payload = buildPayload(campaign);
           fetchLead(payload);
@@ -131,17 +77,7 @@ export default function initFlow() {
 
         step.style.display = 'none';
         const next = steps[index + 1];
-        const upcomingCoregs = steps.slice(index + 1).filter(s => s.classList.contains('coreg-section'));
-
-        if (upcomingCoregs.length === 0 && longFormSection) {
-          if (longFormCampaigns.length > 0) {
-            longFormSection.style.display = 'block';
-            reloadImages(longFormSection);
-          } else if (next) {
-            next.style.display = 'block';
-            reloadImages(next);
-          }
-        } else if (next) {
+        if (next) {
           next.style.display = 'block';
           reloadImages(next);
         }
@@ -158,8 +94,38 @@ export default function initFlow() {
   });
 }
 
-const coregAnswers = {};
-window.coregAnswers = coregAnswers;
+function validateShortForm(form) {
+  const fields = [
+    { id: 'firstname', name: 'Voornaam' },
+    { id: 'lastname', name: 'Achternaam' },
+    { id: 'dob-day', name: 'Geboortedag' },
+    { id: 'dob-month', name: 'Geboortemaand' },
+    { id: 'dob-year', name: 'Geboortejaar' },
+    { id: 'email', name: 'E-mailadres' },
+  ];
+
+  const gender = form.querySelector('input[name="gender"]:checked');
+  const messages = [];
+
+  if (!gender) messages.push('Geslacht');
+
+  fields.forEach(({ id, name }) => {
+    const val = form.querySelector(`#${id}`)?.value.trim();
+    if (!val) messages.push(name);
+  });
+
+  const email = form.querySelector('#email')?.value.trim();
+  if (email && (!email.includes('@') || !email.includes('.'))) {
+    messages.push('Geldig e-mailadres');
+  }
+
+  if (messages.length > 0) {
+    alert('Vul aub de volgende velden correct in:\n' + messages.join('\n'));
+    return false;
+  }
+
+  return true;
+}
 
 function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
   coregAnswers[sponsorId] = [];
@@ -207,4 +173,25 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
   const currentCoregSection = document.querySelector(`.coreg-section[style*="display: block"]`);
   const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
   flowNextBtn?.click();
+
+  setTimeout(checkIfLongFormShouldBeShown, 200);
+}
+
+function checkIfLongFormShouldBeShown() {
+  const longFormSection = document.getElementById('long-form-section');
+  const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
+    .filter(s => window.getComputedStyle(s).display !== 'none');
+  const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
+
+  if (remainingCoregs.length === 0 && longFormCampaigns.length > 0 && !alreadyHandled) {
+    longFormSection.style.display = 'block';
+    longFormSection.setAttribute('data-displayed', 'true');
+    reloadImages(longFormSection);
+  } else if (remainingCoregs.length === 0 && longFormCampaigns.length === 0) {
+    const next = longFormSection?.nextElementSibling;
+    if (next) {
+      next.style.display = 'block';
+      reloadImages(next);
+    }
+  }
 }
