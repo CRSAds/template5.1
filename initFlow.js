@@ -167,8 +167,9 @@ export default function initFlow() {
         if (next) {
           next.style.display = 'block';
           reloadImages(next);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
   });
@@ -228,33 +229,25 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
 
   const currentCoregSection = document.querySelector(`.coreg-section[style*="display: block"]`);
   const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
-  if (flowNextBtn) flowNextBtn.click();
+  flowNextBtn?.click();
 
   const allCoregs = Array.from(document.querySelectorAll('.coreg-section'));
   const remaining = allCoregs.filter(section => section.style.display !== 'none');
   const longFormSection = document.getElementById('long-form-section');
   const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
 
-  if (remaining.length === 0 && longFormSection && !alreadyHandled) {
-    if (longFormCampaigns.length > 0) {
-      console.log('🟧 Alle coregs klaar → long form tonen:', longFormCampaigns);
-      longFormSection.style.display = 'block';
-      longFormSection.setAttribute('data-displayed', 'true');
-      reloadImages(longFormSection);
-    } else {
-      console.log('⏭ Geen long form sponsor → long form overslaan');
-      longFormSection.style.display = 'none'; // ✅ forceren dat hij niet verschijnt
-      longFormSection.setAttribute('data-displayed', 'true');
-
-      const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
-      const idx = steps.findIndex(s => s.id === 'long-form-section');
-      const next = steps[idx + 1];
-      if (next) {
-        next.classList.remove('hide-on-live');
-        next.style.removeProperty('display');
-        reloadImages(next);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+  if (remaining.length === 0 && longFormCampaigns.length > 0 && !alreadyHandled) {
+    console.log('🟧 Alle coregs klaar → long form tonen:', longFormCampaigns);
+    longFormSection.style.display = 'block';
+    longFormSection.setAttribute('data-displayed', 'true');
+    reloadImages(longFormSection);
+  } else if (remaining.length === 0 && longFormCampaigns.length === 0) {
+    const next = longFormSection?.nextElementSibling;
+    if (next) {
+      next.classList.remove('hide-on-live');
+      next.style.display = 'block';
+      reloadImages(next);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 }
