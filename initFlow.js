@@ -163,7 +163,7 @@ export default function initFlow() {
         const next = steps[index + 1];
         const upcomingCoregs = steps.slice(index + 1).filter(s => s.classList.contains('coreg-section'));
 
-        if (upcomingCoregs.length === 0 && longFormSection) {
+if (upcomingCoregs.length === 0 && longFormSection) {
   const alreadyHandled = longFormSection.getAttribute('data-displayed') === 'true';
 
   if (longFormCampaigns.length > 0 && !alreadyHandled) {
@@ -175,11 +175,10 @@ export default function initFlow() {
     next.style.display = 'block';
     reloadImages(next);
   }
+} else if (next) {
+  next.style.display = 'block';
+  reloadImages(next);
 }
-        } else if (next) {
-          next.style.display = 'block';
-          reloadImages(next);
-        }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
