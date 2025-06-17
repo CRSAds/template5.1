@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('accept-sponsors-btn');
   if (btn) {
     btn.addEventListener('click', () => {
-      localStorage.setItem('sponsor_optin', sponsorOptinText);
+      sessionStorage.setItem('sponsor_optin', sponsorOptinText);
     });
   }
 
@@ -35,9 +35,9 @@ export function buildPayload(campaign, options = { includeSponsors: true }) {
   const urlParams = new URLSearchParams(window.location.search);
   const t_id = urlParams.get("t_id") || crypto.randomUUID();
 
-  const dob_day = localStorage.getItem('dob_day');
-  const dob_month = localStorage.getItem('dob_month');
-  const dob_year = localStorage.getItem('dob_year');
+  const dob_day = sessionStorage.getItem('dob_day');
+  const dob_month = sessionStorage.getItem('dob_month');
+  const dob_year = sessionStorage.getItem('dob_year');
   const dob_iso = dob_year && dob_month && dob_day
     ? `${dob_year.padStart(4, '0')}-${dob_month.padStart(2, '0')}-${dob_day.padStart(2, '0')}`
     : '';
@@ -45,31 +45,31 @@ export function buildPayload(campaign, options = { includeSponsors: true }) {
   const payload = {
     cid: campaign.cid,
     sid: campaign.sid,
-    gender: localStorage.getItem('gender'),
-    firstname: localStorage.getItem('firstname'),
-    lastname: localStorage.getItem('lastname'),
-    email: localStorage.getItem('email'),
+    gender: sessionStorage.getItem('gender'),
+    firstname: sessionStorage.getItem('firstname'),
+    lastname: sessionStorage.getItem('lastname'),
+    email: sessionStorage.getItem('email'),
     dob_day,
     dob_month,
     dob_year,
     f_5_dob: dob_iso,
     t_id,
-    postcode: localStorage.getItem('postcode') || '',
-    straat: localStorage.getItem('straat') || '',
-    huisnummer: localStorage.getItem('huisnummer') || '',
-    woonplaats: localStorage.getItem('woonplaats') || '',
-    telefoon: localStorage.getItem('telefoon') || '',
+    postcode: sessionStorage.getItem('postcode') || '',
+    straat: sessionStorage.getItem('straat') || '',
+    huisnummer: sessionStorage.getItem('huisnummer') || '',
+    woonplaats: sessionStorage.getItem('woonplaats') || '',
+    telefoon: sessionStorage.getItem('telefoon') || '',
     campaignId: Object.keys(sponsorCampaigns).find(key => sponsorCampaigns[key].cid === campaign.cid)
   };
 
   if (campaign.coregAnswerKey) {
-    payload.f_2014_coreg_answer = localStorage.getItem(campaign.coregAnswerKey) || '';
+    payload.f_2014_coreg_answer = sessionStorage.getItem(campaign.coregAnswerKey) || '';
   }
 
   payload.f_1453_campagne_url = window.location.origin + window.location.pathname;
 
   if (campaign.cid === 925 && options.includeSponsors) {
-    const optin = localStorage.getItem('sponsor_optin');
+    const optin = sessionStorage.getItem('sponsor_optin');
     if (optin) {
       payload.f_2047_EM_CO_sponsors = optin;
     }
@@ -139,7 +139,7 @@ export function setupFormSubmit() {
 
     ['postcode', 'straat', 'huisnummer', 'woonplaats', 'telefoon'].forEach(id => {
       const val = document.getElementById(id)?.value.trim();
-      if (val) localStorage.setItem(id, val);
+      if (val) sessionStorage.setItem(id, val);
     });
 
     if (Array.isArray(window.longFormCampaigns)) {
