@@ -5,7 +5,7 @@ import sponsorCampaigns from './sponsorCampaigns.js';
 window.sponsorCampaigns = sponsorCampaigns;
 window.submittedCampaigns = new Set();
 
-// Sponsoroptin registratie (optioneel)
+// ✅ Sponsoroptin registratie bij akkoord-button
 const sponsorOptinText = `spaaractief_ja directdeals_ja qliqs_ja outspot_ja onlineacties_ja aownu_ja betervrouw_ja ipay_ja cashbackkorting_ja cashhier_ja myclics_ja seniorenvoordeelpas_ja favorieteacties_ja spaaronline_ja cashbackacties_ja woolsocks_ja dealdonkey_ja centmail_ja`;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,6 +13,29 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btn) {
     btn.addEventListener('click', () => {
       sessionStorage.setItem('sponsor_optin', sponsorOptinText);
+    });
+  }
+
+  // ✅ Autofocus geboortedatum (hersteld)
+  const day = document.getElementById("dob-day");
+  const month = document.getElementById("dob-month");
+  const year = document.getElementById("dob-year");
+
+  if (day) {
+    day.addEventListener("input", () => {
+      const val = day.value;
+      if (val.length === 2 || parseInt(val[0], 10) >= 4) {
+        month.focus();
+      }
+    });
+  }
+
+  if (month) {
+    month.addEventListener("input", () => {
+      const val = month.value;
+      if (val.length === 2 || parseInt(val[0], 10) >= 2) {
+        year.focus();
+      }
     });
   }
 });
@@ -24,7 +47,9 @@ export function buildPayload(campaign, options = { includeSponsors: true }) {
   const dob_day = sessionStorage.getItem('dob_day');
   const dob_month = sessionStorage.getItem('dob_month');
   const dob_year = sessionStorage.getItem('dob_year');
-  const dobIso = (dob_day && dob_month && dob_year) ? `${dob_year}-${dob_month.padStart(2, '0')}-${dob_day.padStart(2, '0')}` : '';
+  const dob_iso = dob_year && dob_month && dob_day
+    ? `${dob_year.padStart(4, '0')}-${dob_month.padStart(2, '0')}-${dob_day.padStart(2, '0')}`
+    : '';
 
   const payload = {
     cid: campaign.cid,
@@ -32,12 +57,12 @@ export function buildPayload(campaign, options = { includeSponsors: true }) {
     gender: sessionStorage.getItem('gender'),
     firstname: sessionStorage.getItem('firstname'),
     lastname: sessionStorage.getItem('lastname'),
+    email: sessionStorage.getItem('email'),
     dob_day,
     dob_month,
     dob_year,
-    f_5_dob: dobIso,
-    email: sessionStorage.getItem('email'),
-    t_id: t_id,
+    f_5_dob: dob_iso,
+    t_id,
     postcode: sessionStorage.getItem('postcode') || '',
     straat: sessionStorage.getItem('straat') || '',
     huisnummer: sessionStorage.getItem('huisnummer') || '',
@@ -155,27 +180,4 @@ export default function setupFormSubmit() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   });
-
-  // Autofocus geboortedatum
-  const day = document.getElementById("dob-day");
-  const month = document.getElementById("dob-month");
-  const year = document.getElementById("dob-year");
-
-  if (day) {
-    day.addEventListener("input", () => {
-      const val = day.value;
-      if (val.length === 2 || parseInt(val[0], 10) >= 4) {
-        month?.focus();
-      }
-    });
-  }
-
-  if (month) {
-    month.addEventListener("input", () => {
-      const val = month.value;
-      if (val.length === 2 || parseInt(val[0], 10) >= 2) {
-        year?.focus();
-      }
-    });
-  }
 }
