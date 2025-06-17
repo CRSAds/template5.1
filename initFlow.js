@@ -140,44 +140,56 @@ export default function initFlow() {
       });
     });
 
-step.querySelectorAll('.sponsor-optin').forEach(button => {
-  button.addEventListener('click', () => {
-    const campaignId = button.id;
-    const campaign = sponsorCampaigns[campaignId];
-    if (!campaign) return;
+    step.querySelectorAll('.sponsor-optin').forEach(button => {
+      button.addEventListener('click', () => {
+        const campaignId = button.id;
+        const campaign = sponsorCampaigns[campaignId];
+        if (!campaign) return;
 
-    if (campaign.coregAnswerKey) {
-      sessionStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
-    }
+        if (campaign.coregAnswerKey) {
+          sessionStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
+        }
 
-    // Als long form nodig is, bewaren (maar nog niets tonen)
-    if (campaign.requiresLongForm === true) {
-      if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-        longFormCampaigns.push(campaign);
-      }
-    } else {
-      // Anders direct lead versturen
-      const payload = buildPayload(campaign);
-      fetchLead(payload);
-    }
+        if (campaign.requiresLongForm === true) {
+          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+            longFormCampaigns.push(campaign);
+          }
+        } else {
+          const payload = buildPayload(campaign);
+          fetchLead(payload);
+        }
 
-    // Verberg huidige sectie
-    step.style.display = 'none';
+        step.style.display = 'none';
 
-    // Toon volgende coreg stap
-    const next = steps[steps.indexOf(step) + 1];
-    if (next) {
-      next.style.display = 'block';
-      reloadImages(next);
-    }
+        const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
+          .filter(s => window.getComputedStyle(s).display !== 'none');
+        const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
 
-    // Check daarna pas of long form moet worden getoond (als laatste stap)
-    checkIfLongFormShouldBeShown();
+        if (remainingCoregs.length > 0) {
+          const next = steps[stepIndex + 1];
+          if (next) {
+            next.style.display = 'block';
+            reloadImages(next);
+          }
+        } else {
+          // Toon long form alleen als er ten minste 1 sponsor met long form is
+          if (longFormCampaigns.length > 0 && !alreadyHandled) {
+            longFormSection.style.display = 'block';
+            longFormSection.setAttribute('data-displayed', 'true');
+            reloadImages(longFormSection);
+          } else {
+            const next = longFormSection?.nextElementSibling;
+            if (next) {
+              next.style.display = 'block';
+              reloadImages(next);
+            }
+          }
+        }
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     });
   });
-});
 
   Object.entries(sponsorCampaigns).forEach(([campaignId, config]) => {
     if (config.hasCoregFlow && config.coregAnswerKey) {
@@ -235,26 +247,4 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
   const currentCoregSection = document.querySelector(`.coreg-section[style*="display: block"]`);
   const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
   flowNextBtn?.click();
-
-  checkIfLongFormShouldBeShown();
-}
-
-function checkIfLongFormShouldBeShown() {
-  const longFormSection = document.getElementById('long-form-section');
-  const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
-
-  const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
-    .filter(s => window.getComputedStyle(s).display !== 'none');
-
-  if (remainingCoregs.length === 0 && longFormCampaigns.length > 0 && !alreadyHandled) {
-    longFormSection.style.display = 'block';
-    longFormSection.setAttribute('data-displayed', 'true');
-    reloadImages(longFormSection);
-  } else if (remainingCoregs.length === 0 && longFormCampaigns.length === 0) {
-    const next = longFormSection?.nextElementSibling;
-    if (next) {
-      next.style.display = 'block';
-      reloadImages(next);
-    }
-  }
 }
