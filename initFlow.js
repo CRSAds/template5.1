@@ -105,39 +105,41 @@ export default function initFlow() {
       });
     });
 
-    step.querySelectorAll('.sponsor-optin').forEach(button => {
-      button.addEventListener('click', () => {
-        const campaignId = button.id;
-        const campaign = sponsorCampaigns[campaignId];
-        if (!campaign) return;
+step.querySelectorAll('.sponsor-optin').forEach(button => {
+  button.addEventListener('click', () => {
+    const campaignId = button.id;
+    const campaign = sponsorCampaigns[campaignId];
+    if (!campaign) return;
 
-        const answer = button.innerText.toLowerCase();
-        const isPositive = ['ja', 'yes', 'akkoord'].some(word => answer.includes(word));
+    const answer = button.innerText.toLowerCase();
+    const isPositive = campaign.requiresLongForm
+      ? ['ja', 'yes', 'akkoord', 'graag'].some(word => answer.includes(word))
+      : true;
 
-        console.log("📮 Antwoord:", { campaignId, answer, isPositive });
+    console.log("📮 Antwoord:", { campaignId, answer, isPositive });
 
-        if (campaign.coregAnswerKey) {
-          sessionStorage.setItem(campaign.coregAnswerKey, answer);
-        }
+    if (campaign.coregAnswerKey) {
+      sessionStorage.setItem(campaign.coregAnswerKey, answer);
+    }
 
-        if (campaign.requiresLongForm && isPositive) {
-          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-            longFormCampaigns.push(campaign);
-            console.log("➕ Toegevoegd aan longFormCampaigns:", campaign.cid);
-          }
-        } else if (isPositive) {
-          fetchLead(buildPayload(campaign));
-        }
+    if (campaign.requiresLongForm && isPositive) {
+      if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+        longFormCampaigns.push(campaign);
+        console.log("➕ Toegevoegd aan longFormCampaigns:", campaign.cid);
+      }
+    } else if (isPositive) {
+      fetchLead(buildPayload(campaign));
+    }
 
-        step.style.display = 'none';
-        const next = steps[steps.indexOf(step) + 1];
-        if (next) {
-          next.style.display = 'block';
-          reloadImages(next);
-        }
+    step.style.display = 'none';
+    const next = steps[steps.indexOf(step) + 1];
+    if (next) {
+      next.style.display = 'block';
+      reloadImages(next);
+    }
 
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setTimeout(() => checkIfLongFormShouldBeShown(), 200);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => checkIfLongFormShouldBeShown(), 200);
       });
     });
   });
