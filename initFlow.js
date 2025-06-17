@@ -68,43 +68,72 @@ export default function initFlow() {
       });
     });
 
-    step.querySelectorAll('.sponsor-optin').forEach(button => {
-      button.addEventListener('click', () => {
-        const campaignId = button.id;
-        const campaign = sponsorCampaigns[campaignId];
-        if (!campaign) return;
+step.querySelectorAll('.sponsor-optin').forEach(button => {
+  button.addEventListener('click', () => {
+    const campaignId = button.id;
+    const campaign = sponsorCampaigns[campaignId];
+    if (!campaign) return;
 
-        const answer = button.innerText.trim().toLowerCase();
-        const isPositive = ['ja', 'yes', 'graag', 'akkoord'].some(txt => answer.includes(txt));
-        console.log("📮 Antwoord:", { campaignId, answer, isPositive, requiresLongForm: campaign.requiresLongForm });
+    const answer = button.innerText.trim().toLowerCase();
+    const isPositive = ['ja', 'yes', 'akkoord'].some(word => answer.includes(word));
 
-        if (campaign.coregAnswerKey) {
-          sessionStorage.setItem(campaign.coregAnswerKey, answer);
-        }
-
-        if (campaign.requiresLongForm && isPositive) {
-          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-            longFormCampaigns.push(campaign);
-            console.log("➕ Toegevoegd aan longFormCampaigns:", campaign.cid);
-          }
-        } else if (!campaign.requiresLongForm) {
-          // ✅ Short form sponsor altijd verzenden
-          fetchLead(buildPayload(campaign));
-        }
-
-        step.style.display = 'none';
-        const next = steps[steps.indexOf(step) + 1];
-        if (next) {
-          next.style.display = 'block';
-          reloadImages(next);
-        }
-
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        // ✅ Alleen checken na álle coregs
-        setTimeout(() => checkIfLongFormShouldBeShown(), 200);
-      });
+    console.log("📮 Antwoord:", {
+      campaignId,
+      answer,
+      isPositive,
+      requiresLongForm: campaign.requiresLongForm
     });
+
+    // ⏺️ Antwoord opslaan
+    if (campaign.coregAnswerKey) {
+      sessionStorage.setItem(campaign.coregAnswerKey, answer);
+    }
+
+    // 🟢 SHORT FORM: altijd direct versturen bij JA
+    if (!campaign.requiresLongForm && isPositive) {
+      const payload = buildPayload(campaign);
+      fetchLead(payload);
+    }
+
+    // 🟡 LONG FORM: alleen opslaan bij positief antwoord
+    if (campaign.requiresLongForm && isPositive) {
+      if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+        longFormCampaigns.push(campaign);
+        console.log("➕ Toegevoegd aan longFormCampaigns:", campaign.cid);
+      }
+    }
+
+    // 🧹 Huidige sectie verbergen
+    step.style.display = 'none';
+
+    // 🔄 Zoek volgende coreg of beslis over long form
+    const remainingCoregs = steps.slice(stepIndex + 1).filter(s => 
+      s.classList.contains('coreg-section') && getComputedStyle(s).display !== 'none'
+    );
+
+    const alreadyShown = longFormSection?.getAttribute('data-displayed') === 'true';
+
+    if (remainingCoregs.length > 0) {
+      const next = steps[stepIndex + 1];
+      if (next) {
+        next.style.display = 'block';
+        reloadImages(next);
+      }
+    } else if (longFormCampaigns.length > 0 && !alreadyShown) {
+      longFormSection.style.display = 'block';
+      longFormSection.setAttribute('data-displayed', 'true');
+      reloadImages(longFormSection);
+    } else {
+      const next = longFormSection?.nextElementSibling;
+      if (next) {
+        next.style.display = 'block';
+        reloadImages(next);
+      }
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
   });
 
   Object.entries(sponsorCampaigns).forEach(([id, config]) => {
