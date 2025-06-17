@@ -1,4 +1,3 @@
-// formSubmit.js
 import { reloadImages } from './imageFix.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
 
@@ -105,6 +104,17 @@ export function fetchLead(payload) {
     .then(res => res.json())
     .then(data => {
       console.log("✅ Lead verzonden:", data);
+
+      // ✅ Facebook Pixel tracking indien van toepassing
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('utm_source') === 'facebook' && typeof fbq === 'function') {
+          fbq('track', 'Lead');
+        }
+      } catch (e) {
+        console.warn("⚠️ Facebook pixel niet beschikbaar of fout:", e);
+      }
+
       return data;
     })
     .catch(err => {
