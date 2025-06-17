@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
       sessionStorage.setItem('sponsor_optin', sponsorOptinText);
     });
   }
+
+  initBirthdayAutoFocus();
 });
 
 export function buildPayload(campaign, options = { includeSponsors: true }) {
@@ -149,4 +151,29 @@ export default function setupFormSubmit() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   });
+}
+
+// ✅ Autofocus geboortedatum velden
+function initBirthdayAutoFocus() {
+  const day = document.getElementById("dob-day");
+  const month = document.getElementById("dob-month");
+  const year = document.getElementById("dob-year");
+
+  if (day) {
+    day.addEventListener("input", () => {
+      const val = day.value;
+      if (val.length === 2 || parseInt(val[0], 10) >= 4) {
+        month?.focus();
+      }
+    });
+  }
+
+  if (month) {
+    month.addEventListener("input", () => {
+      const val = month.value;
+      if (val.length === 2 || parseInt(val[0], 10) >= 2) {
+        year?.focus();
+      }
+    });
+  }
 }
