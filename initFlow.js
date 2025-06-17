@@ -238,3 +238,25 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
   const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
   flowNextBtn?.click();
 }
+
+function checkIfLongFormShouldBeShown() {
+  const longFormSection = document.getElementById('long-form-section');
+  const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
+
+  const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
+    .filter(s => window.getComputedStyle(s).display !== 'none');
+
+  if (remainingCoregs.length > 0 || alreadyHandled) return;
+
+  if (longFormCampaigns.length > 0) {
+    longFormSection.style.display = 'block';
+    longFormSection.setAttribute('data-displayed', 'true');
+    reloadImages(longFormSection);
+  } else {
+    const next = longFormSection?.nextElementSibling;
+    if (next) {
+      next.style.display = 'block';
+      reloadImages(next);
+    }
+  }
+}
