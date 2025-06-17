@@ -77,6 +77,19 @@ export default function initFlow() {
     step.querySelectorAll('.flow-next').forEach(btn => {
       btn.addEventListener('click', () => {
         const skipNext = btn.classList.contains('skip-next-section');
+        const isFinalCoreg = btn.classList.contains('final-coreg');
+
+        if (isFinalCoreg && longFormCampaigns.length === 0) {
+          step.style.display = 'none';
+          const next = steps[stepIndex + 2];
+          if (next) {
+            next.style.display = 'block';
+            reloadImages(next);
+          }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+
         const campaignId = step.id?.startsWith('campaign-') ? step.id : null;
         const campaign = sponsorCampaigns[campaignId];
 
@@ -145,7 +158,6 @@ export default function initFlow() {
       });
     });
 
-    // ✅ Sponsor-optin
     step.querySelectorAll('.sponsor-optin').forEach(button => {
       button.addEventListener('click', () => {
         const campaignId = button.id;
