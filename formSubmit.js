@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ✅ Autofocus geboortedatum (hersteld)
+  // ✅ Autofocus geboortedatum
   const day = document.getElementById("dob-day");
   const month = document.getElementById("dob-month");
   const year = document.getElementById("dob-year");
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     day.addEventListener("input", () => {
       const val = day.value;
       if (val.length === 2 || parseInt(val[0], 10) >= 4) {
-        month.focus();
+        month?.focus();
       }
     });
   }
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     month.addEventListener("input", () => {
       const val = month.value;
       if (val.length === 2 || parseInt(val[0], 10) >= 2) {
-        year.focus();
+        year?.focus();
       }
     });
   }
@@ -96,6 +96,13 @@ export function fetchLead(payload) {
 
   window.submittedCampaigns.add(key);
 
+  // ✅ Facebook Pixel Lead tracking
+  const urlParams = new URLSearchParams(window.location.search);
+  const utm_source = urlParams.get('utm_source');
+  if (utm_source === 'facebook' && typeof fbq === 'function') {
+    fbq('track', 'Lead');
+  }
+
   return fetch('https://template5-1.vercel.app/api/submit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -104,17 +111,6 @@ export function fetchLead(payload) {
     .then(res => res.json())
     .then(data => {
       console.log("✅ Lead verzonden:", data);
-
-      // ✅ Facebook Pixel tracking indien van toepassing
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('utm_source') === 'facebook' && typeof fbq === 'function') {
-          fbq('track', 'Lead');
-        }
-      } catch (e) {
-        console.warn("⚠️ Facebook pixel niet beschikbaar of fout:", e);
-      }
-
       return data;
     })
     .catch(err => {
