@@ -140,49 +140,44 @@ export default function initFlow() {
       });
     });
 
-    step.querySelectorAll('.sponsor-optin').forEach(button => {
-      button.addEventListener('click', () => {
-        const campaignId = button.id;
-        const campaign = sponsorCampaigns[campaignId];
-        if (!campaign) return;
+step.querySelectorAll('.sponsor-optin').forEach(button => {
+  button.addEventListener('click', () => {
+    const campaignId = button.id;
+    const campaign = sponsorCampaigns[campaignId];
+    if (!campaign) return;
 
-        if (campaign.coregAnswerKey) {
-          sessionStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
-        }
+    if (campaign.coregAnswerKey) {
+      sessionStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
+    }
 
-        if (campaign.requiresLongForm === true) {
-          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-            longFormCampaigns.push(campaign);
-          }
-        } else {
-          const payload = buildPayload(campaign);
-          fetchLead(payload);
-        }
+    // Als long form nodig is, bewaren (maar nog niets tonen)
+    if (campaign.requiresLongForm === true) {
+      if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+        longFormCampaigns.push(campaign);
+      }
+    } else {
+      // Anders direct lead versturen
+      const payload = buildPayload(campaign);
+      fetchLead(payload);
+    }
 
-        step.style.display = 'none';
+    // Verberg huidige sectie
+    step.style.display = 'none';
 
-        const currentIndex = steps.indexOf(step);
-        const nextCoreg = steps.slice(currentIndex + 1).find(s => s.classList.contains('coreg-section'));
+    // Toon volgende coreg stap
+    const next = steps[steps.indexOf(step) + 1];
+    if (next) {
+      next.style.display = 'block';
+      reloadImages(next);
+    }
 
-        if (nextCoreg) {
-          nextCoreg.style.display = 'block';
-          reloadImages(nextCoreg);
-        } else if (longFormCampaigns.length > 0 && !longFormSection.getAttribute('data-displayed')) {
-          longFormSection.style.display = 'block';
-          longFormSection.setAttribute('data-displayed', 'true');
-          reloadImages(longFormSection);
-        } else {
-          const afterLongForm = longFormSection?.nextElementSibling;
-          if (afterLongForm) {
-            afterLongForm.style.display = 'block';
-            reloadImages(afterLongForm);
-          }
-        }
+    // Check daarna pas of long form moet worden getoond (als laatste stap)
+    checkIfLongFormShouldBeShown();
 
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
+});
 
   Object.entries(sponsorCampaigns).forEach(([campaignId, config]) => {
     if (config.hasCoregFlow && config.coregAnswerKey) {
