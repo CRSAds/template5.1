@@ -231,18 +231,25 @@ function checkIfLongFormShouldBeShown() {
   const longFormSection = document.getElementById('long-form-section');
   const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
 
+  // Controleer alle coreg-secties
   const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
     .filter(s => window.getComputedStyle(s).display !== 'none');
 
+  // Als alle coregs zijn afgehandeld en er is minstens 1 long form sponsor
   if (remainingCoregs.length === 0 && longFormCampaigns.length > 0 && !alreadyHandled) {
     longFormSection.style.display = 'block';
     longFormSection.setAttribute('data-displayed', 'true');
     reloadImages(longFormSection);
-  } else if (remainingCoregs.length === 0 && longFormCampaigns.length === 0) {
+  }
+
+  // Als alle coregs zijn afgehandeld en er is géén long form sponsor
+  else if (remainingCoregs.length === 0 && longFormCampaigns.length === 0) {
     const next = longFormSection?.nextElementSibling;
     if (next) {
       next.style.display = 'block';
       reloadImages(next);
     }
   }
+
+  // In alle andere gevallen: niets tonen
 }
