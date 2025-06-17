@@ -59,7 +59,6 @@ function validateForm(form) {
 export default function initFlow() {
   const longFormSection = document.getElementById('long-form-section');
   const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
-
   longFormCampaigns.length = 0;
 
   if (!window.location.hostname.includes("swipepages.com")) {
@@ -69,7 +68,7 @@ export default function initFlow() {
     });
   }
 
-  steps.forEach((step, index) => {
+  steps.forEach((step, stepIndex) => {
     step.querySelectorAll('.flow-next').forEach(btn => {
       btn.addEventListener('click', () => {
         const skipNext = btn.classList.contains('skip-next-section');
@@ -117,7 +116,7 @@ export default function initFlow() {
             fetchLead(payload).then(() => {
               fireFacebookLeadEventIfNeeded();
               step.style.display = 'none';
-              const next = skipNext ? steps[index + 2] : steps[index + 1];
+              const next = skipNext ? steps[stepIndex + 2] : steps[stepIndex + 1];
               if (next) {
                 next.style.display = 'block';
                 if (next.id === 'sovendus-section') setupSovendus();
@@ -131,7 +130,7 @@ export default function initFlow() {
         }
 
         step.style.display = 'none';
-        const next = skipNext ? steps[index + 2] : steps[index + 1];
+        const next = skipNext ? steps[stepIndex + 2] : steps[stepIndex + 1];
         if (next) {
           next.style.display = 'block';
           if (next.id === 'sovendus-section') setupSovendus();
@@ -141,59 +140,54 @@ export default function initFlow() {
       });
     });
 
-   step.querySelectorAll('.sponsor-optin').forEach(button => {
-  button.addEventListener('click', () => {
-    const campaignId = button.id;
-    const campaign = sponsorCampaigns[campaignId];
-    if (!campaign) return;
+    step.querySelectorAll('.sponsor-optin').forEach(button => {
+      button.addEventListener('click', () => {
+        const campaignId = button.id;
+        const campaign = sponsorCampaigns[campaignId];
+        if (!campaign) return;
 
-    if (campaign.coregAnswerKey) {
-      sessionStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
-    }
+        if (campaign.coregAnswerKey) {
+          sessionStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
+        }
 
-    if (campaign.requiresLongForm === true) {
-      if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-        longFormCampaigns.push(campaign);
-      }
-    } else {
-      const payload = buildPayload(campaign);
-      fetchLead(payload);
-    }
+        if (campaign.requiresLongForm === true) {
+          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+            longFormCampaigns.push(campaign);
+          }
+        } else {
+          const payload = buildPayload(campaign);
+          fetchLead(payload);
+        }
 
-    // Huidige sectie verbergen
-    step.style.display = 'none';
+        step.style.display = 'none';
 
-    // Check of er nog zichtbare coreg-secties zijn
-    const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
-      .filter(s => window.getComputedStyle(s).display !== 'none');
+        const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
+          .filter(s => window.getComputedStyle(s).display !== 'none');
+        const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
 
-    const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
+        if (remainingCoregs.length > 0) {
+          const next = steps[stepIndex + 1];
+          if (next) {
+            next.style.display = 'block';
+            reloadImages(next);
+          }
+        } else if (longFormCampaigns.length > 0 && !alreadyHandled) {
+          longFormSection.style.display = 'block';
+          longFormSection.setAttribute('data-displayed', 'true');
+          reloadImages(longFormSection);
+        } else {
+          const next = longFormSection?.nextElementSibling;
+          if (next) {
+            next.style.display = 'block';
+            reloadImages(next);
+          }
+        }
 
-    if (remainingCoregs.length > 0) {
-      // Er zijn nog coreg vragen → ga naar de volgende sectie
-      const next = steps[steps.indexOf(step) + 1];
-      if (next) {
-        next.style.display = 'block';
-        reloadImages(next);
-      }
-    } else if (longFormCampaigns.length > 0 && !alreadyHandled) {
-      // Alle coregs klaar, en long form is nodig
-      longFormSection.style.display = 'block';
-      longFormSection.setAttribute('data-displayed', 'true');
-      reloadImages(longFormSection);
-    } else {
-      // Geen long form nodig → ga door naar stap na long form
-      const next = longFormSection?.nextElementSibling;
-      if (next) {
-        next.style.display = 'block';
-        reloadImages(next);
-      }
-    }
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
   });
-});
-    
+
   Object.entries(sponsorCampaigns).forEach(([campaignId, config]) => {
     if (config.hasCoregFlow && config.coregAnswerKey) {
       initGenericCoregSponsorFlow(campaignId, config.coregAnswerKey);
