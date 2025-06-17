@@ -58,6 +58,11 @@ function validateForm(form) {
 
 export default function initFlow() {
   const longFormSection = document.getElementById('long-form-section');
+    // ❗️Altijd verbergen bij load
+  if (longFormSection) {
+    longFormSection.style.display = 'none';
+    longFormSection.setAttribute('data-displayed', 'false');
+  }
   const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
   longFormCampaigns.length = 0;
 
