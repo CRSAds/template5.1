@@ -184,6 +184,7 @@ export default function initFlow() {
     next.style.display = 'block';
     reloadImages(next);
   }
+      }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
