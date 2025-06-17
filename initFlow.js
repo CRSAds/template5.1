@@ -160,15 +160,9 @@ export default function initFlow() {
           fetchLead(payload);
         }
 
-        step.style.display = 'none';
-        const next = steps[index + 1];
-        if (next) {
-          next.style.display = 'block';
-          reloadImages(next);
-        }
-
-        checkIfLongFormShouldBeShown();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+step.style.display = 'none';
+checkIfLongFormShouldBeShown();
+window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
   });
