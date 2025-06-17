@@ -1,3 +1,4 @@
+// initFlow.js
 import { reloadImages } from './imageFix.js';
 import { fetchLead, buildPayload } from './formSubmit.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
@@ -6,6 +7,11 @@ const longFormCampaigns = [];
 window.longFormCampaigns = longFormCampaigns;
 const coregAnswers = {};
 window.coregAnswers = coregAnswers;
+
+function shouldFireFacebookPixel() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('utm_source')?.toLowerCase() === 'facebook';
+}
 
 // ✅ sponsor_optin registratie bij akkoord-button
 document.addEventListener('DOMContentLoaded', () => {
@@ -54,6 +60,10 @@ export default function initFlow() {
           const includeSponsors = !(step.id === 'voorwaarden-section' && !btn.id);
           const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
           fetchLead(payload);
+
+          if (shouldFireFacebookPixel() && typeof fbq !== 'undefined') {
+            fbq('track', 'Lead');
+          }
         }
 
         step.style.display = 'none';
@@ -87,6 +97,10 @@ export default function initFlow() {
         } else if (isPositive) {
           const payload = buildPayload(campaign);
           fetchLead(payload);
+
+          if (shouldFireFacebookPixel() && typeof fbq !== 'undefined') {
+            fbq('track', 'Lead');
+          }
         }
 
         step.style.display = 'none';
