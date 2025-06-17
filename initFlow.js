@@ -141,32 +141,59 @@ export default function initFlow() {
       });
     });
 
-    step.querySelectorAll('.sponsor-optin').forEach(button => {
-      button.addEventListener('click', () => {
-        const campaignId = button.id;
-        const campaign = sponsorCampaigns[campaignId];
-        if (!campaign) return;
+   step.querySelectorAll('.sponsor-optin').forEach(button => {
+  button.addEventListener('click', () => {
+    const campaignId = button.id;
+    const campaign = sponsorCampaigns[campaignId];
+    if (!campaign) return;
 
-        if (campaign.coregAnswerKey) {
-          sessionStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
-        }
+    if (campaign.coregAnswerKey) {
+      sessionStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
+    }
 
-        if (campaign.requiresLongForm === true) {
-          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-            longFormCampaigns.push(campaign);
-          }
-        } else {
-          const payload = buildPayload(campaign);
-          fetchLead(payload);
-        }
+    if (campaign.requiresLongForm === true) {
+      if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+        longFormCampaigns.push(campaign);
+      }
+    } else {
+      const payload = buildPayload(campaign);
+      fetchLead(payload);
+    }
 
-        step.style.display = 'none';
-        checkIfLongFormShouldBeShown();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    });
+    // Huidige sectie verbergen
+    step.style.display = 'none';
+
+    // Check of er nog zichtbare coreg-secties zijn
+    const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
+      .filter(s => window.getComputedStyle(s).display !== 'none');
+
+    const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
+
+    if (remainingCoregs.length > 0) {
+      // Er zijn nog coreg vragen → ga naar de volgende sectie
+      const next = steps[steps.indexOf(step) + 1];
+      if (next) {
+        next.style.display = 'block';
+        reloadImages(next);
+      }
+    } else if (longFormCampaigns.length > 0 && !alreadyHandled) {
+      // Alle coregs klaar, en long form is nodig
+      longFormSection.style.display = 'block';
+      longFormSection.setAttribute('data-displayed', 'true');
+      reloadImages(longFormSection);
+    } else {
+      // Geen long form nodig → ga door naar stap na long form
+      const next = longFormSection?.nextElementSibling;
+      if (next) {
+        next.style.display = 'block';
+        reloadImages(next);
+      }
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
-
+});
+    
   Object.entries(sponsorCampaigns).forEach(([campaignId, config]) => {
     if (config.hasCoregFlow && config.coregAnswerKey) {
       initGenericCoregSponsorFlow(campaignId, config.coregAnswerKey);
