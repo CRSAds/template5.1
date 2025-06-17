@@ -162,29 +162,10 @@ export default function initFlow() {
 
         step.style.display = 'none';
         const next = steps[index + 1];
-        const upcomingCoregs = steps.slice(index + 1).filter(s => s.classList.contains('coreg-section'));
-        const allCoregsHandled = upcomingCoregs.length === 0;
-
-      if (longFormSection) {
-  const alreadyHandled = longFormSection.getAttribute('data-displayed') === 'true';
-  const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
-    .filter(s => window.getComputedStyle(s).display !== 'none');
-
-  if (remainingCoregs.length === 0 && longFormCampaigns.length > 0 && !alreadyHandled) {
-    longFormSection.style.display = 'block';
-    longFormSection.setAttribute('data-displayed', 'true');
-    reloadImages(longFormSection);
-  } else if (remainingCoregs.length === 0 && longFormCampaigns.length === 0) {
-    const next = longFormSection.nextElementSibling;
-    if (next) {
-      next.style.display = 'block';
-      reloadImages(next);
-    }
-  } else if (next) {
-    next.style.display = 'block';
-    reloadImages(next);
-  }
-      }
+        if (next) {
+          next.style.display = 'block';
+          reloadImages(next);
+        }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
