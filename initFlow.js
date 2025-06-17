@@ -145,62 +145,48 @@ export default function initFlow() {
       });
     });
 
-    // ✅ Sponsor-optin buttons
-step.querySelectorAll('.sponsor-optin').forEach(button => {
-  button.addEventListener('click', () => {
-    const campaignId = button.id;
-    const campaign = sponsorCampaigns[campaignId];
-    if (!campaign) return;
+    // ✅ Sponsor-optin
+    step.querySelectorAll('.sponsor-optin').forEach(button => {
+      button.addEventListener('click', () => {
+        const campaignId = button.id;
+        const campaign = sponsorCampaigns[campaignId];
+        if (!campaign) return;
 
-    const answer = button.innerText.toLowerCase();
-    const isPositive = ['ja', 'yes', 'akkoord'].some(word => answer.includes(word));
+        const answer = button.innerText.toLowerCase();
+        const isPositive = ['ja', 'yes', 'akkoord'].some(word => answer.includes(word));
 
-    console.log("📮 Antwoord:", {
-      campaignId,
-      answer,
-      isPositive,
-      requiresLongForm: campaign.requiresLongForm
+        console.log("📮 Antwoord:", {
+          campaignId,
+          answer,
+          isPositive,
+          requiresLongForm: campaign.requiresLongForm
+        });
+
+        if (campaign.coregAnswerKey) {
+          sessionStorage.setItem(campaign.coregAnswerKey, answer);
+        }
+
+        if (campaign.requiresLongForm && isPositive) {
+          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+            longFormCampaigns.push(campaign);
+            console.log("➕ Toegevoegd aan longFormCampaigns:", campaign.cid);
+          }
+        }
+
+        if (!campaign.requiresLongForm) {
+          fetchLead(buildPayload(campaign));
+        }
+
+        step.style.display = 'none';
+        const next = steps[steps.indexOf(step) + 1];
+        if (next) {
+          next.style.display = 'block';
+          reloadImages(next);
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     });
-
-    // Altijd antwoord opslaan
-    if (campaign.coregAnswerKey) {
-      sessionStorage.setItem(campaign.coregAnswerKey, answer);
-    }
-
-    // ✅ Alleen long form campagnes opslaan als isPositive
-    if (campaign.requiresLongForm && isPositive) {
-      if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-        longFormCampaigns.push(campaign);
-        console.log("➕ Toegevoegd aan longFormCampaigns:", campaign.cid);
-      }
-    }
-
-    // ✅ Alleen short form leads direct versturen
-    if (!campaign.requiresLongForm) {
-      fetchLead(buildPayload(campaign));
-    }
-
-    // Verberg huidige sectie en toon volgende
-    step.style.display = 'none';
-    const next = steps[steps.indexOf(step) + 1];
-    if (next) {
-      next.style.display = 'block';
-      reloadImages(next);
-    }
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    // ✅ Alleen na laatste coreg check uitvoeren
-    const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
-      .filter(s => window.getComputedStyle(s).display !== 'none');
-
-    if (remainingCoregs.length === 0) {
-      setTimeout(() => {
-        checkIfLongFormShouldBeShown();
-      }, 200);
-    }
-  });
-});
   });
 
   Object.entries(sponsorCampaigns).forEach(([campaignId, config]) => {
@@ -259,6 +245,8 @@ function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
   const currentCoregSection = document.querySelector(`.coreg-section[style*="display: block"]`);
   const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
   flowNextBtn?.click();
+
+  setTimeout(() => checkIfLongFormShouldBeShown(), 100);
 }
 
 function checkIfLongFormShouldBeShown() {
