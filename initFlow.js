@@ -12,6 +12,7 @@ export default function initFlow() {
   const longFormSection = document.getElementById('long-form-section');
   const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
 
+  // Alleen eerste sectie tonen
   steps.forEach((el, i) => {
     el.style.display = i === 0 ? 'block' : 'none';
   });
@@ -22,14 +23,21 @@ export default function initFlow() {
   }
 
   steps.forEach((step, index) => {
+    // Flow-next buttons (shortform, voorwaarden, etc.)
     step.querySelectorAll('.flow-next').forEach(btn => {
       btn.addEventListener('click', () => {
         const skipNext = btn.classList.contains('skip-next-section');
         const campaignId = step.id?.startsWith('campaign-') ? step.id : null;
         const campaign = sponsorCampaigns[campaignId];
 
+        // Als sponsor-next bij flow-section: bewaar antwoord
         if (campaign?.coregAnswerKey && btn.classList.contains('sponsor-next')) {
           localStorage.setItem(campaign.coregAnswerKey, btn.innerText.trim());
+        }
+
+        // Als voorwaarden → zonder accept button → verwijder cosponsor optin
+        if (step.id === 'voorwaarden-section' && !btn.id) {
+          localStorage.removeItem('sponsor_optin');
         }
 
         const form = step.querySelector('form');
@@ -37,7 +45,8 @@ export default function initFlow() {
 
         // Shortform lead versturen
         if (form && form.id === 'lead-form') {
-          const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"]);
+          const includeSponsors = step.id !== 'voorwaarden-section' || btn.id === 'accept-sponsors-btn';
+          const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
           fetchLead(payload);
         }
 
@@ -52,6 +61,7 @@ export default function initFlow() {
       });
     });
 
+    // Sponsor-optin buttons
     step.querySelectorAll('.sponsor-optin').forEach(button => {
       button.addEventListener('click', () => {
         const campaignId = button.id;
@@ -69,8 +79,8 @@ export default function initFlow() {
           if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
             longFormCampaigns.push(campaign);
           }
-          // ⛔️ géén fetchLead
-        } else {
+          // Géén fetchLead
+        } else if (isPositive) {
           const payload = buildPayload(campaign);
           fetchLead(payload);
         }
