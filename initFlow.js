@@ -1,4 +1,3 @@
-// initFlow.js
 import { reloadImages } from './imageFix.js';
 import { fetchLead, buildPayload } from './formSubmit.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
@@ -8,7 +7,7 @@ window.longFormCampaigns = longFormCampaigns;
 const coregAnswers = {};
 window.coregAnswers = coregAnswers;
 
-// ✅ sponsor_optin (via akkoord-button)
+// ✅ sponsor_optin registratie bij akkoord-button
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('accept-sponsors-btn');
   if (btn) {
