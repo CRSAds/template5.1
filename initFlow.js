@@ -194,6 +194,7 @@ step.querySelectorAll('.sponsor-optin').forEach(button => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 });
+    });
 
   Object.entries(sponsorCampaigns).forEach(([campaignId, config]) => {
     if (config.hasCoregFlow && config.coregAnswerKey) {
