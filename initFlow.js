@@ -161,29 +161,21 @@ export default function initFlow() {
 
         step.style.display = 'none';
 
-        // ✅ FIX: Alleen kijken naar coregs ná huidige stap
-        const remainingCoregs = steps.slice(stepIndex + 1).filter(s =>
-          s.classList.contains('coreg-section') &&
-          window.getComputedStyle(s).display !== 'none'
-        );
+        const currentIndex = steps.indexOf(step);
+        const nextCoreg = steps.slice(currentIndex + 1).find(s => s.classList.contains('coreg-section'));
 
-        const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
-
-        if (remainingCoregs.length > 0) {
-          const next = steps[stepIndex + 1];
-          if (next) {
-            next.style.display = 'block';
-            reloadImages(next);
-          }
-        } else if (longFormCampaigns.length > 0 && !alreadyHandled) {
+        if (nextCoreg) {
+          nextCoreg.style.display = 'block';
+          reloadImages(nextCoreg);
+        } else if (longFormCampaigns.length > 0 && !longFormSection.getAttribute('data-displayed')) {
           longFormSection.style.display = 'block';
           longFormSection.setAttribute('data-displayed', 'true');
           reloadImages(longFormSection);
         } else {
-          const next = longFormSection?.nextElementSibling;
-          if (next) {
-            next.style.display = 'block';
-            reloadImages(next);
+          const afterLongForm = longFormSection?.nextElementSibling;
+          if (afterLongForm) {
+            afterLongForm.style.display = 'block';
+            reloadImages(afterLongForm);
           }
         }
 
@@ -198,8 +190,6 @@ export default function initFlow() {
     }
   });
 }
-
-// ... de rest (initGenericCoregSponsorFlow, checkIfLongFormShouldBeShown, etc.) hoeft niet aangepast te worden
 
 const coregAnswers = {};
 window.coregAnswers = coregAnswers;
