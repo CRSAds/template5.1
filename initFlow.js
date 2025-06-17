@@ -1,5 +1,5 @@
 import { reloadImages } from './imageFix.js';
-import { fetchLead, buildPayload } from './formSubmit.js';
+import { fetchLead, buildPayload, setupFormSubmit } from './formSubmit.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
 import setupSovendus from './setupSovendus.js';
 import { fireFacebookLeadEventIfNeeded } from './facebookpixel.js';
@@ -32,23 +32,6 @@ function validateForm(form) {
     valid = messages.length === 0;
   }
 
-  if (form.id === 'long-form') {
-    const postcode = form.querySelector('#postcode')?.value.trim();
-    const straat = form.querySelector('#straat')?.value.trim();
-    const huisnummer = form.querySelector('#huisnummer')?.value.trim();
-    const woonplaats = form.querySelector('#woonplaats')?.value.trim();
-    const telefoon = form.querySelector('#telefoon')?.value.trim();
-
-    if (!postcode) messages.push('Postcode invullen');
-    if (!straat) messages.push('Straat invullen');
-    if (!huisnummer) messages.push('Huisnummer invullen');
-    if (!woonplaats) messages.push('Woonplaats invullen');
-    if (!telefoon) messages.push('Telefoonnummer invullen');
-    else if (telefoon.length > 11) messages.push('Telefoonnummer mag max. 11 tekens bevatten');
-
-    valid = messages.length === 0;
-  }
-
   if (!valid) {
     alert('Vul aub alle velden correct in:\n' + messages.join('\n'));
   }
@@ -58,11 +41,13 @@ function validateForm(form) {
 
 export default function initFlow() {
   const longFormSection = document.getElementById('long-form-section');
-    // ❗️Altijd verbergen bij load
   if (longFormSection) {
     longFormSection.style.display = 'none';
     longFormSection.setAttribute('data-displayed', 'false');
   }
+
+  setupFormSubmit(); // ✅ long form submit handler
+
   const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
   longFormCampaigns.length = 0;
 
@@ -77,59 +62,34 @@ export default function initFlow() {
     step.querySelectorAll('.flow-next').forEach(btn => {
       btn.addEventListener('click', () => {
         const skipNext = btn.classList.contains('skip-next-section');
-        const campaignId = step.id?.startsWith('campaign-') ? step.id : null;
-        const campaign = sponsorCampaigns[campaignId];
-
-        if (campaign?.coregAnswerKey && btn.classList.contains('sponsor-next')) {
-          sessionStorage.setItem(campaign.coregAnswerKey, btn.innerText.trim());
-        }
-
-        if (step.id === 'voorwaarden-section' && !btn.id) {
-          sessionStorage.removeItem('sponsor_optin');
-        }
-
         const form = step.querySelector('form');
         const isShortForm = form?.id === 'lead-form';
 
         if (form && !validateForm(form)) return;
 
         if (form) {
-          const gender = form.querySelector('input[name="gender"]:checked')?.value || '';
-          const firstname = form.querySelector('#firstname')?.value.trim() || '';
-          const lastname = form.querySelector('#lastname')?.value.trim() || '';
-          const dob_day = form.querySelector('#dob-day')?.value || '';
-          const dob_month = form.querySelector('#dob-month')?.value || '';
-          const dob_year = form.querySelector('#dob-year')?.value || '';
-          const email = form.querySelector('#email')?.value.trim() || '';
-          const urlParams = new URLSearchParams(window.location.search);
-          const t_id = urlParams.get('t_id') || crypto.randomUUID();
-
-          sessionStorage.setItem('gender', gender);
-          sessionStorage.setItem('firstname', firstname);
-          sessionStorage.setItem('lastname', lastname);
-          sessionStorage.setItem('dob_day', dob_day);
-          sessionStorage.setItem('dob_month', dob_month);
-          sessionStorage.setItem('dob_year', dob_year);
-          sessionStorage.setItem('email', email);
+          const fields = ['gender', 'firstname', 'lastname', 'dob_day', 'dob_month', 'dob_year', 'email'];
+          fields.forEach(f => {
+            const el = form.querySelector(`[name="${f}"], #${f}`);
+            if (el) sessionStorage.setItem(f, el.value?.trim() || '');
+          });
+          const t_id = new URLSearchParams(window.location.search).get('t_id') || crypto.randomUUID();
           sessionStorage.setItem('t_id', t_id);
 
           if (isShortForm && !hasSubmittedShortForm) {
             hasSubmittedShortForm = true;
-            const includeSponsors = !(step.id === 'voorwaarden-section' && !btn.id);
-            const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
-
+            const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors: true });
             fetchLead(payload).then(() => {
               fireFacebookLeadEventIfNeeded();
               step.style.display = 'none';
               const next = skipNext ? steps[stepIndex + 2] : steps[stepIndex + 1];
               if (next) {
                 next.style.display = 'block';
-                if (next.id === 'sovendus-section') setupSovendus();
                 reloadImages(next);
+                if (next.id === 'sovendus-section') setupSovendus();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             });
-
             return;
           }
         }
@@ -138,141 +98,76 @@ export default function initFlow() {
         const next = skipNext ? steps[stepIndex + 2] : steps[stepIndex + 1];
         if (next) {
           next.style.display = 'block';
-          if (next.id === 'sovendus-section') setupSovendus();
           reloadImages(next);
+          if (next.id === 'sovendus-section') setupSovendus();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       });
     });
 
-step.querySelectorAll('.sponsor-optin').forEach(button => {
-  button.addEventListener('click', () => {
-    const campaignId = button.id;
-    const campaign = sponsorCampaigns[campaignId];
-    if (!campaign) return;
-
-    const answer = button.innerText.trim().toLowerCase();
-
-    console.log("📮 Antwoord op sponsor:", {
-      campaignId,
-      answer,
-      requiresLongForm: campaign.requiresLongForm
-    });
-
-    if (campaign.coregAnswerKey) {
-      sessionStorage.setItem(campaign.coregAnswerKey, answer);
-    }
-
-    if (campaign.requiresLongForm === true && ['ja', 'yes', 'akkoord'].includes(answer)) {
-      if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-        longFormCampaigns.push(campaign);
-        console.log('✅ Toegevoegd aan longFormCampaigns:', campaignId);
-      }
-    } else if (['ja', 'yes', 'akkoord'].includes(answer)) {
-      const payload = buildPayload(campaign);
-      fetchLead(payload);
-    }
-
-    // Verberg huidige sectie
-    step.style.display = 'none';
-
-    // Toon volgende coreg indien aanwezig
-    const next = steps[steps.indexOf(step) + 1];
-    if (next) {
-      next.style.display = 'block';
-      reloadImages(next);
-    }
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    // ✅ Controleer pas hierna of long form nodig is
-    checkIfLongFormShouldBeShown();
-  });
-});
-  });
-
-  Object.entries(sponsorCampaigns).forEach(([campaignId, config]) => {
-    if (config.hasCoregFlow && config.coregAnswerKey) {
-      initGenericCoregSponsorFlow(campaignId, config.coregAnswerKey);
-    }
-  });
-}
-
-const coregAnswers = {};
-window.coregAnswers = coregAnswers;
-
-function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
-  coregAnswers[sponsorId] = [];
-
-  const allSections = document.querySelectorAll(`[id^="campaign-${sponsorId}"]`);
-  allSections.forEach(section => {
-    const buttons = section.querySelectorAll('.flow-next');
-    buttons.forEach(button => {
+    step.querySelectorAll('.sponsor-optin').forEach(button => {
       button.addEventListener('click', () => {
-        const answerText = button.innerText.trim();
-        coregAnswers[sponsorId].push(answerText);
+        const campaignId = button.id;
+        const campaign = sponsorCampaigns[campaignId];
+        if (!campaign) return;
 
-        if (!button.classList.contains('sponsor-next')) return;
+        const answer = button.innerText.toLowerCase();
+        const isPositive = ['ja', 'yes', 'akkoord'].some(word => answer.includes(word));
 
-        let nextStepId = '';
-        button.classList.forEach(cls => {
-          if (cls.startsWith('next-step-')) {
-            nextStepId = cls.replace('next-step-', '');
+        console.log("📮 Antwoord:", { campaignId, answer, isPositive });
+
+        if (campaign.coregAnswerKey) {
+          sessionStorage.setItem(campaign.coregAnswerKey, answer);
+        }
+
+        if (campaign.requiresLongForm && isPositive) {
+          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+            longFormCampaigns.push(campaign);
+            console.log("➕ Toegevoegd aan longFormCampaigns:", campaign.cid);
           }
-        });
+        } else if (isPositive) {
+          fetchLead(buildPayload(campaign));
+        }
 
-        section.style.display = 'none';
-
-        if (nextStepId) {
-          const nextSection = document.getElementById(nextStepId);
-          if (nextSection) {
-            nextSection.style.display = 'block';
-          } else {
-            handleGenericNextCoregSponsor(sponsorId, coregAnswerKey);
-          }
-        } else {
-          handleGenericNextCoregSponsor(sponsorId, coregAnswerKey);
+        step.style.display = 'none';
+        const next = steps[steps.indexOf(step) + 1];
+        if (next) {
+          next.style.display = 'block';
+          reloadImages(next);
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => checkIfLongFormShouldBeShown(), 200);
       });
     });
   });
 }
 
-function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
-  const combinedAnswer = coregAnswers[sponsorId].join(' - ');
-  sessionStorage.setItem(coregAnswerKey, combinedAnswer);
-
-  const currentCoregSection = document.querySelector(`.coreg-section[style*="display: block"]`);
-  const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
-  flowNextBtn?.click();
-}
-
 function checkIfLongFormShouldBeShown() {
-  const longFormSection = document.getElementById('long-form-section');
-  const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
+  const section = document.getElementById('long-form-section');
+  const alreadyShown = section?.getAttribute('data-displayed') === 'true';
+  const visibleCoregs = Array.from(document.querySelectorAll('.coreg-section'))
+    .filter(el => getComputedStyle(el).display !== 'none');
 
-  const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
-    .filter(s => window.getComputedStyle(s).display !== 'none');
-
-  console.log("🟢 Long form check:", {
-    remainingCoregs,
+  console.log("🔍 Long form check", {
     longFormCampaigns,
-    alreadyHandled
+    remainingCoregSections: visibleCoregs.length,
+    alreadyShown
   });
 
-  if (remainingCoregs.length > 0 || alreadyHandled) return;
+  if (visibleCoregs.length > 0 || alreadyShown) return;
 
   if (longFormCampaigns.length > 0) {
-    longFormSection.style.display = 'block';
-    longFormSection.setAttribute('data-displayed', 'true');
-    reloadImages(longFormSection);
+    section.style.display = 'block';
+    section.setAttribute('data-displayed', 'true');
+    reloadImages(section);
+    console.log("✅ Long form getoond");
   } else {
-    const next = longFormSection?.nextElementSibling;
+    const next = section?.nextElementSibling;
     if (next) {
       next.style.display = 'block';
       reloadImages(next);
+      console.log("⏩ Long form overgeslagen");
     }
   }
 }
