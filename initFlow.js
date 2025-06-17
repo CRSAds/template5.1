@@ -146,30 +146,27 @@ step.querySelectorAll('.sponsor-optin').forEach(button => {
 }
 
 function checkIfLongFormShouldBeShown() {
-  const section = document.getElementById('long-form-section');
-  const alreadyShown = section?.getAttribute('data-displayed') === 'true';
-  const visibleCoregs = Array.from(document.querySelectorAll('.coreg-section'))
-    .filter(el => getComputedStyle(el).display !== 'none');
+  const longFormSection = document.getElementById('long-form-section');
+  const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
 
-  console.log("🔍 Long form check", {
+  const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
+    .filter(s => window.getComputedStyle(s).display !== 'none');
+
+  console.log("🟢 Long form check:", {
     longFormCampaigns,
-    remainingCoregSections: visibleCoregs.length,
-    alreadyShown
+    remainingCoregs,
+    alreadyHandled
   });
 
-  if (visibleCoregs.length > 0 || alreadyShown) return;
+  if (alreadyHandled || remainingCoregs.length > 0) return;
 
   if (longFormCampaigns.length > 0) {
-    section.style.display = 'block';
-    section.setAttribute('data-displayed', 'true');
-    reloadImages(section);
-    console.log("✅ Long form getoond");
+    longFormSection.style.display = 'block';
+    longFormSection.setAttribute('data-displayed', 'true');
+    reloadImages(longFormSection);
+    console.log("📬 Long form getoond");
   } else {
-    const next = section?.nextElementSibling;
-    if (next) {
-      next.style.display = 'block';
-      reloadImages(next);
-      console.log("⏩ Long form overgeslagen");
-    }
+    // ✅ Niets doen: volgende sectie is al getoond in click-handler
+    console.log("🚫 Long form overgeslagen — volgende stap al getoond");
   }
 }
