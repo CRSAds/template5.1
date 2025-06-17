@@ -20,19 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (day) {
     day.addEventListener("input", () => {
-      const val = day.value;
-      if (val.length === 2 || parseInt(val[0], 10) >= 4) {
-        month.focus();
-      }
+      if (day.value.length === 2 || parseInt(day.value[0], 10) >= 4) month.focus();
     });
   }
 
   if (month) {
     month.addEventListener("input", () => {
-      const val = month.value;
-      if (val.length === 2 || parseInt(val[0], 10) >= 2) {
-        year.focus();
-      }
+      if (month.value.length === 2 || parseInt(month.value[0], 10) >= 2) year.focus();
     });
   }
 });
@@ -110,3 +104,61 @@ export function fetchLead(payload) {
     });
 }
 window.fetchLead = fetchLead;
+
+export function validateLongForm(form) {
+  let valid = true;
+  let messages = [];
+
+  const fields = ['postcode', 'straat', 'huisnummer', 'woonplaats', 'telefoon'];
+  const maxPhone = 11;
+
+  fields.forEach(id => {
+    const val = form.querySelector(`#${id}`)?.value.trim();
+    if (!val) messages.push(id);
+    if (id === 'telefoon' && val && val.length > maxPhone) {
+      messages.push('Telefoonnummer mag max. 11 tekens bevatten');
+    }
+  });
+
+  if (messages.length > 0) {
+    alert('Vul aub alle velden correct in:\n' + messages.join('\n'));
+    valid = false;
+  }
+
+  return valid;
+}
+
+export function setupFormSubmit() {
+  const btn = document.getElementById('submit-long-form');
+  const section = document.getElementById('long-form-section');
+  if (!btn || !section) return;
+
+  btn.addEventListener('click', () => {
+    const form = section.querySelector('form');
+    if (!validateLongForm(form)) return;
+
+    ['postcode', 'straat', 'huisnummer', 'woonplaats', 'telefoon'].forEach(id => {
+      const val = document.getElementById(id)?.value.trim();
+      if (val) localStorage.setItem(id, val);
+    });
+
+    if (Array.isArray(window.longFormCampaigns)) {
+      window.longFormCampaigns.forEach(campaign => {
+        const payload = buildPayload(campaign);
+        fetchLead(payload);
+      });
+    }
+
+    section.style.display = 'none';
+    const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
+    const idx = steps.findIndex(s => s.id === 'long-form-section');
+    const next = steps[idx + 1];
+
+    if (next) {
+      next.classList.remove('hide-on-live');
+      next.style.removeProperty('display');
+      reloadImages(next);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+}
