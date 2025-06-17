@@ -5,7 +5,6 @@ import sponsorCampaigns from './sponsorCampaigns.js';
 window.sponsorCampaigns = sponsorCampaigns;
 window.submittedCampaigns = new Set();
 
-// ✅ Sponsoroptin registratie bij akkoord-button
 const sponsorOptinText = `spaaractief_ja directdeals_ja qliqs_ja outspot_ja onlineacties_ja aownu_ja betervrouw_ja ipay_ja cashbackkorting_ja cashhier_ja myclics_ja seniorenvoordeelpas_ja favorieteacties_ja spaaronline_ja cashbackacties_ja woolsocks_ja dealdonkey_ja centmail_ja`;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ✅ Autofocus geboortedatum
   const day = document.getElementById("dob-day");
   const month = document.getElementById("dob-month");
   const year = document.getElementById("dob-year");
@@ -63,7 +61,6 @@ export function buildPayload(campaign, options = { includeSponsors: true }) {
     f_1453_campagne_url: window.location.origin + window.location.pathname
   };
 
-  // Alleen deze basisgegevens voor short form (zoals leadsNL)
   if (!isShortForm) {
     payload.postcode = sessionStorage.getItem('postcode') || '';
     payload.straat = sessionStorage.getItem('straat') || '';
@@ -83,6 +80,7 @@ export function buildPayload(campaign, options = { includeSponsors: true }) {
     }
   }
 
+  console.log("📦 Payload opgebouwd voor:", campaign.cid, payload);
   return payload;
 }
 window.buildPayload = buildPayload;
@@ -95,6 +93,7 @@ export function fetchLead(payload) {
   }
 
   window.submittedCampaigns.add(key);
+  console.log("📤 Verzenden naar API:", payload);
 
   return fetch('https://template5-1.vercel.app/api/submit', {
     method: 'POST',
