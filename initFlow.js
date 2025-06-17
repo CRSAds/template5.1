@@ -8,44 +8,51 @@ window.longFormCampaigns = longFormCampaigns;
 const coregAnswers = {};
 window.coregAnswers = coregAnswers;
 
+// ✅ sponsor_optin (via akkoord-button)
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('accept-sponsors-btn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      sessionStorage.setItem('sponsor_optin', `spaaractief_ja directdeals_ja qliqs_ja outspot_ja onlineacties_ja aownu_ja betervrouw_ja ipay_ja cashbackkorting_ja cashhier_ja myclics_ja seniorenvoordeelpas_ja favorieteacties_ja spaaronline_ja cashbackacties_ja woolsocks_ja dealdonkey_ja centmail_ja`);
+    });
+  }
+});
+
 export default function initFlow() {
   const longFormSection = document.getElementById('long-form-section');
   const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
 
-  // Alleen eerste sectie tonen
-  steps.forEach((el, i) => {
-    el.style.display = i === 0 ? 'block' : 'none';
-  });
-
+  steps.forEach((el, i) => el.style.display = i === 0 ? 'block' : 'none');
   if (longFormSection) {
     longFormSection.style.display = 'none';
     longFormSection.setAttribute('data-displayed', 'false');
   }
 
   steps.forEach((step, index) => {
-    // Flow-next buttons (shortform, voorwaarden, etc.)
     step.querySelectorAll('.flow-next').forEach(btn => {
       btn.addEventListener('click', () => {
         const skipNext = btn.classList.contains('skip-next-section');
         const campaignId = step.id?.startsWith('campaign-') ? step.id : null;
         const campaign = sponsorCampaigns[campaignId];
 
-        // Als sponsor-next bij flow-section: bewaar antwoord
         if (campaign?.coregAnswerKey && btn.classList.contains('sponsor-next')) {
-          localStorage.setItem(campaign.coregAnswerKey, btn.innerText.trim());
-        }
-
-        // Als voorwaarden → zonder accept button → verwijder cosponsor optin
-        if (step.id === 'voorwaarden-section' && !btn.id) {
-          localStorage.removeItem('sponsor_optin');
+          sessionStorage.setItem(campaign.coregAnswerKey, btn.innerText.trim());
         }
 
         const form = step.querySelector('form');
         if (form && form.id === 'lead-form' && !validateShortForm(form)) return;
 
-        // Shortform lead versturen
         if (form && form.id === 'lead-form') {
-          const includeSponsors = step.id !== 'voorwaarden-section' || btn.id === 'accept-sponsors-btn';
+          const urlParams = new URLSearchParams(window.location.search);
+          const t_id = urlParams.get("t_id") || crypto.randomUUID();
+          sessionStorage.setItem('t_id', t_id);
+
+          ['gender', 'firstname', 'lastname', 'dob_day', 'dob_month', 'dob_year', 'email'].forEach(id => {
+            const el = form.querySelector(`#${id}`) || form.querySelector(`input[name="${id}"]:checked`);
+            if (el) sessionStorage.setItem(id, el.value.trim());
+          });
+
+          const includeSponsors = !(step.id === 'voorwaarden-section' && !btn.id);
           const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
           fetchLead(payload);
         }
@@ -61,7 +68,6 @@ export default function initFlow() {
       });
     });
 
-    // Sponsor-optin buttons
     step.querySelectorAll('.sponsor-optin').forEach(button => {
       button.addEventListener('click', () => {
         const campaignId = button.id;
@@ -72,14 +78,13 @@ export default function initFlow() {
         const isPositive = ['ja', 'yes', 'akkoord'].includes(answer);
 
         if (campaign.coregAnswerKey) {
-          localStorage.setItem(campaign.coregAnswerKey, answer);
+          sessionStorage.setItem(campaign.coregAnswerKey, answer);
         }
 
         if (campaign.requiresLongForm && isPositive) {
           if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
             longFormCampaigns.push(campaign);
           }
-          // Géén fetchLead
         } else if (isPositive) {
           const payload = buildPayload(campaign);
           fetchLead(payload);
@@ -111,14 +116,12 @@ function validateShortForm(form) {
     { id: 'dob-day', name: 'Geboortedag' },
     { id: 'dob-month', name: 'Geboortemaand' },
     { id: 'dob-year', name: 'Geboortejaar' },
-    { id: 'email', name: 'E-mailadres' },
+    { id: 'email', name: 'E-mailadres' }
   ];
-
   const gender = form.querySelector('input[name="gender"]:checked');
   const messages = [];
 
   if (!gender) messages.push('Geslacht');
-
   fields.forEach(({ id, name }) => {
     const val = form.querySelector(`#${id}`)?.value.trim();
     if (!val) messages.push(name);
@@ -139,8 +142,8 @@ function validateShortForm(form) {
 
 function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
   coregAnswers[sponsorId] = [];
-
   const allSections = document.querySelectorAll(`[id^="campaign-${sponsorId}"]`);
+
   allSections.forEach(section => {
     const buttons = section.querySelectorAll('.flow-next');
     buttons.forEach(button => {
@@ -160,9 +163,9 @@ function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
         section.style.display = 'none';
 
         if (nextStepId) {
-          const nextSection = document.getElementById(nextStepId);
-          if (nextSection) {
-            nextSection.style.display = 'block';
+          const next = document.getElementById(nextStepId);
+          if (next) {
+            next.style.display = 'block';
           } else {
             handleGenericNextCoregSponsor(sponsorId, coregAnswerKey);
           }
@@ -178,7 +181,7 @@ function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
 
 function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
   const combinedAnswer = coregAnswers[sponsorId].join(' - ');
-  localStorage.setItem(coregAnswerKey, combinedAnswer);
+  sessionStorage.setItem(coregAnswerKey, combinedAnswer);
 
   const currentCoregSection = document.querySelector(`.coreg-section[style*="display: block"]`);
   const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
