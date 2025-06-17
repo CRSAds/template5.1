@@ -1,9 +1,11 @@
+// formSubmit.js
 import { reloadImages } from './imageFix.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
 
 window.sponsorCampaigns = sponsorCampaigns;
 window.submittedCampaigns = new Set();
 
+// ✅ Sponsoroptin registratie bij akkoord-button
 const sponsorOptinText = `spaaractief_ja directdeals_ja qliqs_ja outspot_ja onlineacties_ja aownu_ja betervrouw_ja ipay_ja cashbackkorting_ja cashhier_ja myclics_ja seniorenvoordeelpas_ja favorieteacties_ja spaaronline_ja cashbackacties_ja woolsocks_ja dealdonkey_ja centmail_ja`;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ✅ Autofocus geboortedatum
   const day = document.getElementById("dob-day");
   const month = document.getElementById("dob-month");
   const year = document.getElementById("dob-year");
@@ -42,9 +45,12 @@ export function buildPayload(campaign, options = { includeSponsors: true }) {
     ? `${dob_year.padStart(4, '0')}-${dob_month.padStart(2, '0')}-${dob_day.padStart(2, '0')}`
     : '';
 
+  const isShortForm = campaign.cid === 925;
+
   const payload = {
     cid: campaign.cid,
     sid: campaign.sid,
+    t_id,
     gender: sessionStorage.getItem('gender'),
     firstname: sessionStorage.getItem('firstname'),
     lastname: sessionStorage.getItem('lastname'),
@@ -53,20 +59,22 @@ export function buildPayload(campaign, options = { includeSponsors: true }) {
     dob_month,
     dob_year,
     f_5_dob: dob_iso,
-    t_id,
-    postcode: sessionStorage.getItem('postcode') || '',
-    straat: sessionStorage.getItem('straat') || '',
-    huisnummer: sessionStorage.getItem('huisnummer') || '',
-    woonplaats: sessionStorage.getItem('woonplaats') || '',
-    telefoon: sessionStorage.getItem('telefoon') || '',
-    campaignId: Object.keys(sponsorCampaigns).find(key => sponsorCampaigns[key].cid === campaign.cid)
+    campaignId: Object.keys(sponsorCampaigns).find(key => sponsorCampaigns[key].cid === campaign.cid),
+    f_1453_campagne_url: window.location.origin + window.location.pathname
   };
+
+  // Alleen deze basisgegevens voor short form (zoals leadsNL)
+  if (!isShortForm) {
+    payload.postcode = sessionStorage.getItem('postcode') || '';
+    payload.straat = sessionStorage.getItem('straat') || '';
+    payload.huisnummer = sessionStorage.getItem('huisnummer') || '';
+    payload.woonplaats = sessionStorage.getItem('woonplaats') || '';
+    payload.telefoon = sessionStorage.getItem('telefoon') || '';
+  }
 
   if (campaign.coregAnswerKey) {
     payload.f_2014_coreg_answer = sessionStorage.getItem(campaign.coregAnswerKey) || '';
   }
-
-  payload.f_1453_campagne_url = window.location.origin + window.location.pathname;
 
   if (campaign.cid === 925 && options.includeSponsors) {
     const optin = sessionStorage.getItem('sponsor_optin');
