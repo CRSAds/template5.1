@@ -46,12 +46,15 @@ export function buildPayload(campaign, options = { includeSponsors: true }) {
 
   payload.f_1453_campagne_url = window.location.origin + window.location.pathname;
 
-  if (campaign.cid === 925 && options.includeSponsors) {
-    const optin = localStorage.getItem('sponsor_optin');
-    if (optin) {
-      payload.f_2047_EM_CO_sponsors = optin;
-    }
+if (campaign.cid === 925) {
+  const optin = localStorage.getItem('sponsor_optin');
+  if (options.includeSponsors && optin) {
+    payload.f_2047_EM_CO_sponsors = optin;
+  } else {
+    // Expliciet NIET meesturen
+    delete payload.f_2047_EM_CO_sponsors;
   }
+}
 
   return payload;
 }
