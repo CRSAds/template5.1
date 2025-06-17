@@ -140,61 +140,57 @@ export default function initFlow() {
       });
     });
 
-step.querySelectorAll('.sponsor-optin').forEach(button => {
-  button.addEventListener('click', () => {
-    const campaignId = button.id;
-    const campaign = sponsorCampaigns[campaignId];
-    if (!campaign) return;
+    step.querySelectorAll('.sponsor-optin').forEach(button => {
+      button.addEventListener('click', () => {
+        const campaignId = button.id;
+        const campaign = sponsorCampaigns[campaignId];
+        if (!campaign) return;
 
-    // Sla het antwoord op in sessionStorage
-    if (campaign.coregAnswerKey) {
-      sessionStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
-    }
+        if (campaign.coregAnswerKey) {
+          sessionStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
+        }
 
-    // Voeg toe aan longFormCampaigns indien nodig
-    if (campaign.requiresLongForm === true) {
-      if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
-        longFormCampaigns.push(campaign);
-      }
-    } else {
-      // Direct versturen bij geen long form
-      const payload = buildPayload(campaign);
-      fetchLead(payload);
-    }
+        if (campaign.requiresLongForm === true) {
+          if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
+            longFormCampaigns.push(campaign);
+          }
+        } else {
+          const payload = buildPayload(campaign);
+          fetchLead(payload);
+        }
 
-    // Huidige sectie verbergen
-    step.style.display = 'none';
+        step.style.display = 'none';
 
-    const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
-      .filter(s => window.getComputedStyle(s).display !== 'none');
+        // ✅ FIX: Alleen kijken naar coregs ná huidige stap
+        const remainingCoregs = steps.slice(stepIndex + 1).filter(s =>
+          s.classList.contains('coreg-section') &&
+          window.getComputedStyle(s).display !== 'none'
+        );
 
-    const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
+        const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
 
-    if (remainingCoregs.length > 0) {
-      // Er zijn nog coregs, dus ga naar volgende stap
-      const next = steps[steps.indexOf(step) + 1];
-      if (next) {
-        next.style.display = 'block';
-        reloadImages(next);
-      }
-    } else if (longFormCampaigns.length > 0 && !alreadyHandled) {
-      // Toon long form als die nodig is en nog niet is getoond
-      longFormSection.style.display = 'block';
-      longFormSection.setAttribute('data-displayed', 'true');
-      reloadImages(longFormSection);
-    } else {
-      // Geen long form nodig, doorgaan naar stap erna
-      const next = longFormSection?.nextElementSibling;
-      if (next) {
-        next.style.display = 'block';
-        reloadImages(next);
-      }
-    }
+        if (remainingCoregs.length > 0) {
+          const next = steps[stepIndex + 1];
+          if (next) {
+            next.style.display = 'block';
+            reloadImages(next);
+          }
+        } else if (longFormCampaigns.length > 0 && !alreadyHandled) {
+          longFormSection.style.display = 'block';
+          longFormSection.setAttribute('data-displayed', 'true');
+          reloadImages(longFormSection);
+        } else {
+          const next = longFormSection?.nextElementSibling;
+          if (next) {
+            next.style.display = 'block';
+            reloadImages(next);
+          }
+        }
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-});
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     });
+  });
 
   Object.entries(sponsorCampaigns).forEach(([campaignId, config]) => {
     if (config.hasCoregFlow && config.coregAnswerKey) {
@@ -202,6 +198,8 @@ step.querySelectorAll('.sponsor-optin').forEach(button => {
     }
   });
 }
+
+// ... de rest (initGenericCoregSponsorFlow, checkIfLongFormShouldBeShown, etc.) hoeft niet aangepast te worden
 
 const coregAnswers = {};
 window.coregAnswers = coregAnswers;
