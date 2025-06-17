@@ -152,21 +152,34 @@ function checkIfLongFormShouldBeShown() {
   const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
     .filter(s => window.getComputedStyle(s).display !== 'none');
 
-  console.log("🟢 Long form check:", {
+  console.log("📌 Long form check:", {
     longFormCampaigns,
     remainingCoregs,
     alreadyHandled
   });
 
-  if (alreadyHandled || remainingCoregs.length > 0) return;
+  // ✅ Alleen doorgaan als álle coregs afgehandeld zijn en long form nog niet is getoond
+  if (remainingCoregs.length > 0 || alreadyHandled) return;
 
   if (longFormCampaigns.length > 0) {
+    // ❗️Verberg alle andere secties om dubbele weergave te voorkomen
+    document.querySelectorAll('.coreg-section').forEach(el => {
+      el.style.display = 'none';
+    });
+
     longFormSection.style.display = 'block';
     longFormSection.setAttribute('data-displayed', 'true');
     reloadImages(longFormSection);
     console.log("📬 Long form getoond");
   } else {
-    // ✅ Niets doen: volgende sectie is al getoond in click-handler
-    console.log("🚫 Long form overgeslagen — volgende stap al getoond");
+    // ✅ Geen long form nodig → toon volgende stap
+    const next = longFormSection?.nextElementSibling;
+    if (next) {
+      // ❗️Zorg dat long form ook verborgen is voor de zekerheid
+      longFormSection.style.display = 'none';
+      next.style.display = 'block';
+      reloadImages(next);
+      console.log("⏩ Long form overgeslagen → volgende stap getoond");
+    }
   }
 }
