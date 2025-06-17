@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('accept-sponsors-btn');
   if (btn) {
     btn.addEventListener('click', () => {
-      localStorage.setItem('sponsor_optin', sponsorOptinText);
+      sessionStorage.setItem('sponsor_optin', sponsorOptinText);
     });
   }
 });
@@ -24,37 +24,34 @@ export function buildPayload(campaign, options = { includeSponsors: true }) {
   const payload = {
     cid: campaign.cid,
     sid: campaign.sid,
-    gender: localStorage.getItem('gender'),
-    firstname: localStorage.getItem('firstname'),
-    lastname: localStorage.getItem('lastname'),
-    dob_day: localStorage.getItem('dob_day'),
-    dob_month: localStorage.getItem('dob_month'),
-    dob_year: localStorage.getItem('dob_year'),
-    email: localStorage.getItem('email'),
+    gender: sessionStorage.getItem('gender'),
+    firstname: sessionStorage.getItem('firstname'),
+    lastname: sessionStorage.getItem('lastname'),
+    dob_day: sessionStorage.getItem('dob_day'),
+    dob_month: sessionStorage.getItem('dob_month'),
+    dob_year: sessionStorage.getItem('dob_year'),
+    email: sessionStorage.getItem('email'),
     t_id: t_id,
-    postcode: localStorage.getItem('postcode') || '',
-    straat: localStorage.getItem('straat') || '',
-    huisnummer: localStorage.getItem('huisnummer') || '',
-    woonplaats: localStorage.getItem('woonplaats') || '',
-    telefoon: localStorage.getItem('telefoon') || '',
+    postcode: sessionStorage.getItem('postcode') || '',
+    straat: sessionStorage.getItem('straat') || '',
+    huisnummer: sessionStorage.getItem('huisnummer') || '',
+    woonplaats: sessionStorage.getItem('woonplaats') || '',
+    telefoon: sessionStorage.getItem('telefoon') || '',
     campaignId: Object.keys(sponsorCampaigns).find(key => sponsorCampaigns[key].cid === campaign.cid)
   };
 
   if (campaign.coregAnswerKey) {
-    payload.f_2014_coreg_answer = localStorage.getItem(campaign.coregAnswerKey) || '';
+    payload.f_2014_coreg_answer = sessionStorage.getItem(campaign.coregAnswerKey) || '';
   }
 
   payload.f_1453_campagne_url = window.location.origin + window.location.pathname;
 
-if (campaign.cid === 925) {
-  const optin = localStorage.getItem('sponsor_optin');
-  if (options.includeSponsors && optin) {
-    payload.f_2047_EM_CO_sponsors = optin;
-  } else {
-    // Expliciet NIET meesturen
-    delete payload.f_2047_EM_CO_sponsors;
+  if (campaign.cid === 925 && options.includeSponsors) {
+    const optin = sessionStorage.getItem('sponsor_optin');
+    if (optin) {
+      payload.f_2047_EM_CO_sponsors = optin;
+    }
   }
-}
 
   return payload;
 }
@@ -62,7 +59,6 @@ window.buildPayload = buildPayload;
 
 export function fetchLead(payload) {
   const key = `${payload.cid}_${payload.sid}`;
-
   if (window.submittedCampaigns.has(key)) {
     console.warn("⛔️ fetchLead overgeslagen → al verzonden:", key);
     return Promise.resolve({ skipped: true });
@@ -131,7 +127,7 @@ export default function setupFormSubmit() {
     };
 
     for (const [key, value] of Object.entries(extraData)) {
-      localStorage.setItem(key, value);
+      sessionStorage.setItem(key, value);
     }
 
     if (Array.isArray(window.longFormCampaigns)) {
@@ -153,27 +149,4 @@ export default function setupFormSubmit() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   });
-
-  // Autofocus geboortedatum
-  const day = document.getElementById("dob-day");
-  const month = document.getElementById("dob-month");
-  const year = document.getElementById("dob-year");
-
-  if (day) {
-    day.addEventListener("input", () => {
-      const val = day.value;
-      if (val.length === 2 || parseInt(val[0], 10) >= 4) {
-        month.focus();
-      }
-    });
-  }
-
-  if (month) {
-    month.addEventListener("input", () => {
-      const val = month.value;
-      if (val.length === 2 || parseInt(val[0], 10) >= 2) {
-        year.focus();
-      }
-    });
-  }
 }
