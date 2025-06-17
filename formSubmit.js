@@ -151,8 +151,24 @@ export function setupFormSubmit() {
 
     if (Array.isArray(window.longFormCampaigns)) {
       window.longFormCampaigns.forEach(campaign => {
-        const payload = buildPayload(campaign);
-        fetchLead(payload);
+        const answer = sessionStorage.getItem(campaign.coregAnswerKey || '');
+        const isPositive = answer && ['ja', 'yes', 'akkoord'].some(word =>
+          answer.toLowerCase().includes(word)
+        );
+
+        console.log("📨 Long form verwerking:", {
+          campaignId: campaign.cid,
+          coregAnswerKey: campaign.coregAnswerKey,
+          antwoord: answer,
+          isPositive
+        });
+
+        if (isPositive) {
+          const payload = buildPayload(campaign);
+          fetchLead(payload);
+        } else {
+          console.log(`⛔️ Lead NIET verstuurd voor ${campaign.cid} → antwoord was:`, answer);
+        }
       });
     }
 
