@@ -165,21 +165,25 @@ export default function initFlow() {
         const upcomingCoregs = steps.slice(index + 1).filter(s => s.classList.contains('coreg-section'));
         const allCoregsHandled = upcomingCoregs.length === 0;
 
-        if (allCoregsHandled && longFormSection) {
-          const alreadyHandled = longFormSection.getAttribute('data-displayed') === 'true';
+      if (longFormSection) {
+  const alreadyHandled = longFormSection.getAttribute('data-displayed') === 'true';
+  const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
+    .filter(s => window.getComputedStyle(s).display !== 'none');
 
-          if (longFormCampaigns.length > 0 && !alreadyHandled) {
-            longFormSection.style.display = 'block';
-            longFormSection.setAttribute('data-displayed', 'true');
-            reloadImages(longFormSection);
-          } else if (next) {
-            next.style.display = 'block';
-            reloadImages(next);
-          }
-        } else if (next) {
-          next.style.display = 'block';
-          reloadImages(next);
-        }
+  if (remainingCoregs.length === 0 && longFormCampaigns.length > 0 && !alreadyHandled) {
+    longFormSection.style.display = 'block';
+    longFormSection.setAttribute('data-displayed', 'true');
+    reloadImages(longFormSection);
+  } else if (remainingCoregs.length === 0 && longFormCampaigns.length === 0) {
+    const next = longFormSection.nextElementSibling;
+    if (next) {
+      next.style.display = 'block';
+      reloadImages(next);
+    }
+  } else if (next) {
+    next.style.display = 'block';
+    reloadImages(next);
+  }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
