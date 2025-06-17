@@ -1,4 +1,3 @@
-// initFlow.js
 import { reloadImages } from './imageFix.js';
 import { fetchLead, buildPayload } from './formSubmit.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
@@ -77,12 +76,12 @@ export default function initFlow() {
         const campaignId = step.id?.startsWith('campaign-') ? step.id : null;
         const campaign = sponsorCampaigns[campaignId];
 
-        if (campaign && campaign.coregAnswerKey && btn.classList.contains('sponsor-next')) {
-          localStorage.setItem(campaign.coregAnswerKey, btn.innerText.trim());
+        if (campaign?.coregAnswerKey && btn.classList.contains('sponsor-next')) {
+          sessionStorage.setItem(campaign.coregAnswerKey, btn.innerText.trim());
         }
 
         if (step.id === 'voorwaarden-section' && !btn.id) {
-          localStorage.removeItem('sponsor_optin');
+          sessionStorage.removeItem('sponsor_optin');
         }
 
         const form = step.querySelector('form');
@@ -101,14 +100,14 @@ export default function initFlow() {
           const urlParams = new URLSearchParams(window.location.search);
           const t_id = urlParams.get('t_id') || crypto.randomUUID();
 
-          localStorage.setItem('gender', gender);
-          localStorage.setItem('firstname', firstname);
-          localStorage.setItem('lastname', lastname);
-          localStorage.setItem('dob_day', dob_day);
-          localStorage.setItem('dob_month', dob_month);
-          localStorage.setItem('dob_year', dob_year);
-          localStorage.setItem('email', email);
-          localStorage.setItem('t_id', t_id);
+          sessionStorage.setItem('gender', gender);
+          sessionStorage.setItem('firstname', firstname);
+          sessionStorage.setItem('lastname', lastname);
+          sessionStorage.setItem('dob_day', dob_day);
+          sessionStorage.setItem('dob_month', dob_month);
+          sessionStorage.setItem('dob_year', dob_year);
+          sessionStorage.setItem('email', email);
+          sessionStorage.setItem('t_id', t_id);
 
           if (isShortForm && !hasSubmittedShortForm) {
             hasSubmittedShortForm = true;
@@ -149,7 +148,7 @@ export default function initFlow() {
         if (!campaign) return;
 
         if (campaign.coregAnswerKey) {
-          localStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
+          sessionStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
         }
 
         if (campaign.requiresLongForm === true) {
@@ -238,7 +237,7 @@ function initGenericCoregSponsorFlow(sponsorId, coregAnswerKey) {
 
 function handleGenericNextCoregSponsor(sponsorId, coregAnswerKey) {
   const combinedAnswer = coregAnswers[sponsorId].join(' - ');
-  localStorage.setItem(coregAnswerKey, combinedAnswer);
+  sessionStorage.setItem(coregAnswerKey, combinedAnswer);
 
   const currentCoregSection = document.querySelector(`.coreg-section[style*="display: block"]`);
   const flowNextBtn = currentCoregSection?.querySelector('.flow-next');
