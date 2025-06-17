@@ -16,6 +16,9 @@ export default async function handler(req, res) {
       gender,
       firstname,
       lastname,
+      dob_day,
+      dob_month,
+      dob_year,
       f_5_dob,
       email,
       postcode,
@@ -25,7 +28,8 @@ export default async function handler(req, res) {
       telefoon,
       t_id,
       f_2014_coreg_answer,
-      f_1453_campagne_url // ✅ campagne_url nu vanaf frontend (betrouwbaarder dan referer!)
+      f_1453_campagne_url,
+      f_2047_EM_CO_sponsors
     } = req.body;
 
     console.log('Ontvangen data van frontend:', req.body);
@@ -35,7 +39,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Campagnegegevens ontbreken' });
     }
 
-    const dob = f_5_dob || ''; // ISO 8601 string direct uit payload
     const ipaddress = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
     const optindate = new Date().toISOString().split('.')[0] + '+0000';
 
@@ -46,11 +49,11 @@ export default async function handler(req, res) {
       f_3_firstname: firstname || '',
       f_4_lastname: lastname || '',
       f_1_email: email || '',
-      f_5_dob: dob || '',
+      f_5_dob: f_5_dob || '',
       f_11_postcode: postcode || '',
       f_6_address1: straat || '',
       f_7_address2: huisnummer || '',
-      f_8_address3: '', // optioneel extra veld
+      f_8_address3: '',
       f_9_towncity: woonplaats || '',
       f_12_phone1: telefoon || '',
       f_17_ipaddress: ipaddress,
@@ -58,7 +61,7 @@ export default async function handler(req, res) {
       f_1322_transaction_id: t_id || '',
       f_2014_coreg_answer: f_2014_coreg_answer || '',
       f_1453_campagne_url: f_1453_campagne_url || '',
-      f_2047_EM_CO_sponsors: req.body.f_2047_EM_CO_sponsors || ''
+      f_2047_EM_CO_sponsors: f_2047_EM_CO_sponsors || ''
     });
 
     const response = await fetch('https://crsadvertising.databowl.com/api/v1/lead', {
