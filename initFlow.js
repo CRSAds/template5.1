@@ -146,10 +146,12 @@ step.querySelectorAll('.sponsor-optin').forEach(button => {
     const campaign = sponsorCampaigns[campaignId];
     if (!campaign) return;
 
+    // Antwoord opslaan
     if (campaign.coregAnswerKey) {
       sessionStorage.setItem(campaign.coregAnswerKey, button.innerText.trim());
     }
 
+    // Long form campagne opslaan indien nodig
     if (campaign.requiresLongForm === true) {
       if (!longFormCampaigns.find(c => c.cid === campaign.cid)) {
         longFormCampaigns.push(campaign);
@@ -159,38 +161,24 @@ step.querySelectorAll('.sponsor-optin').forEach(button => {
       fetchLead(payload);
     }
 
-    // Huidige stap verbergen
+    // Huidige sectie verbergen
     step.style.display = 'none';
 
-    const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
-      .filter(s => window.getComputedStyle(s).display !== 'none');
-
-    const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
-
-    // ➤ Bepaal volgende stap (de daadwerkelijke volgende sectie in steps array)
-    const next = steps[steps.indexOf(step) + 1];
-
-    if (remainingCoregs.length > 0 && next) {
-      // Er zijn nog coregs → ga naar volgende sectie
-      next.style.display = 'block';
-      reloadImages(next);
-    } else if (remainingCoregs.length === 0 && longFormCampaigns.length > 0 && !alreadyHandled) {
-      // Alle coregs afgehandeld, en er is een long form sponsor
-      longFormSection.style.display = 'block';
-      longFormSection.setAttribute('data-displayed', 'true');
-      reloadImages(longFormSection);
-    } else {
-      // Geen coregs meer en geen long form nodig → ga naar stap na long form
-      const nextAfterLongForm = longFormSection?.nextElementSibling;
-      if (nextAfterLongForm) {
-        nextAfterLongForm.style.display = 'block';
-        reloadImages(nextAfterLongForm);
-      }
+    // Altijd doorgaan naar volgende coreg (indien aanwezig)
+    const nextStep = steps[steps.indexOf(step) + 1];
+    if (nextStep) {
+      nextStep.style.display = 'block';
+      reloadImages(nextStep);
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-});
+
+    // Pas hierna controleren of long form getoond moet worden
+    setTimeout(() => {
+      checkIfLongFormShouldBeShown();
+    }, 300); // kleine delay om visuele race condition te voorkomen
+      });
+    });
   });
 
   Object.entries(sponsorCampaigns).forEach(([campaignId, config]) => {
