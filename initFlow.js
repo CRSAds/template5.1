@@ -161,8 +161,33 @@ export default function initFlow() {
         }
 
 step.style.display = 'none';
-checkIfLongFormShouldBeShown();
+// Bepaal logica op basis van long form-status en resterende coregs
+const remainingCoregs = Array.from(document.querySelectorAll('.coreg-section'))
+  .filter(s => window.getComputedStyle(s).display !== 'none');
+
+const alreadyHandled = longFormSection?.getAttribute('data-displayed') === 'true';
+
+if (remainingCoregs.length === 0 && longFormCampaigns.length > 0 && !alreadyHandled) {
+  longFormSection.style.display = 'block';
+  longFormSection.setAttribute('data-displayed', 'true');
+  reloadImages(longFormSection);
+} else if (remainingCoregs.length === 0 && longFormCampaigns.length === 0) {
+  const next = longFormSection?.nextElementSibling;
+  if (next) {
+    next.style.display = 'block';
+    reloadImages(next);
+  }
+} else {
+  // Er zijn nog coregs → ga door naar de volgende stap
+  const next = steps[index + 1];
+  if (next) {
+    next.style.display = 'block';
+    reloadImages(next);
+  }
+}
+
 window.scrollTo({ top: 0, behavior: 'smooth' });
+        
       });
     });
   });
