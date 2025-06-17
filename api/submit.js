@@ -16,9 +16,7 @@ export default async function handler(req, res) {
       gender,
       firstname,
       lastname,
-      dob_day,
-      dob_month,
-      dob_year,
+      f_5_dob,
       email,
       postcode,
       straat,
@@ -37,7 +35,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Campagnegegevens ontbreken' });
     }
 
-    const dob = `${dob_year}-${dob_month?.padStart(2, '0')}-${dob_day?.padStart(2, '0')}`;
+    const dob = f_5_dob || ''; // ISO 8601 string direct uit payload
     const ipaddress = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
     const optindate = new Date().toISOString().split('.')[0] + '+0000';
 
