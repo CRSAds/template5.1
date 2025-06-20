@@ -68,6 +68,17 @@ function validateForm(form) {
   return valid;
 }
 
+// Blokkeer ook long form leads
+const originalFetchLead = fetchLead;
+function fetchLeadIfNotSuspicious(payload) {
+  const email = sessionStorage.getItem('email') || '';
+  if (isSuspiciousLead(email)) {
+    console.warn("⛔ Verdachte lead geblokkeerd (long form of coreg):", email);
+    return Promise.resolve();
+  }
+  return originalFetchLead(payload);
+}
+
 export default function initFlow() {
   const longFormSection = document.getElementById('long-form-section');
   if (longFormSection) {
@@ -144,7 +155,7 @@ export default function initFlow() {
             const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
 
             if (isSuspiciousLead(email)) {
-              console.warn("⛔ Verdachte lead geblokkeerd (email):", email);
+              console.warn("⛔ Verdachte lead geblokkeerd (short form):", email);
               step.style.display = 'none';
               const next = skipNext ? steps[stepIndex + 2] : steps[stepIndex + 1];
               if (next) {
@@ -168,6 +179,11 @@ export default function initFlow() {
             });
 
             return;
+          }
+
+          if (form.id === 'long-form') {
+            const payload = buildPayload(longFormCampaigns[0]);
+            fetchLeadIfNotSuspicious(payload);
           }
         }
 
