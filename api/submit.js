@@ -43,14 +43,17 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Campagnegegevens ontbreken' });
     }
 
-const now = Date.now();
-const ipKey = `${ipaddress}_${t_id}`;
-const lastTime = recentIps.get(ipKey);
-if (lastTime && now - lastTime < 60000) {
-  console.warn('⛔️ Lead geblokkeerd (zelfde IP + t_id binnen 1 minuut):', ipKey);
-  return res.status(200).json({ success: false, blocked: true, reason: 'duplicate_ip' });
-}
-recentIps.set(ipKey, now);
+    const ipaddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
+    const safeTId = t_id || 'unknown';
+    const ipKey = `${ipaddress}_${safeTId}`;
+
+    const now = Date.now();
+    const lastTime = recentIps.get(ipKey);
+    if (lastTime && now - lastTime < 60000) {
+      console.warn('⛔️ Lead geblokkeerd vanwege te snelle herhaalde lead:', ipKey);
+      return res.status(200).json({ success: false, blocked: true, reason: 'duplicate_ip' });
+    }
+    recentIps.set(ipKey, now);
 
     const emailLower = (email || '').toLowerCase();
     const suspiciousPatterns = [
@@ -84,7 +87,7 @@ recentIps.set(ipKey, now);
       f_12_phone1: telefoon || '',
       f_17_ipaddress: ipaddress,
       f_55_optindate: optindate,
-      f_1322_transaction_id: t_id || '',
+      f_1322_transaction_id: safeTId,
       f_2014_coreg_answer: f_2014_coreg_answer || '',
       f_1453_campagne_url: f_1453_campagne_url || '',
       f_2047_EM_CO_sponsors: f_2047_EM_CO_sponsors || ''
