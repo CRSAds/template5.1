@@ -43,14 +43,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Campagnegegevens ontbreken' });
     }
 
-    const ipaddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
-    const now = Date.now();
-    const lastTime = recentIps.get(ipaddress);
-    if (lastTime && now - lastTime < 60000) {
-      console.warn('⛔️ IP geblokkeerd vanwege te snelle herhaalde lead:', ipaddress);
-      return res.status(200).json({ success: false, blocked: true, reason: 'duplicate_ip' });
-    }
-    recentIps.set(ipaddress, now);
+const now = Date.now();
+const ipKey = `${ipaddress}_${t_id}`;
+const lastTime = recentIps.get(ipKey);
+if (lastTime && now - lastTime < 60000) {
+  console.warn('⛔️ Lead geblokkeerd (zelfde IP + t_id binnen 1 minuut):', ipKey);
+  return res.status(200).json({ success: false, blocked: true, reason: 'duplicate_ip' });
+}
+recentIps.set(ipKey, now);
 
     const emailLower = (email || '').toLowerCase();
     const suspiciousPatterns = [
