@@ -8,6 +8,18 @@ const longFormCampaigns = [];
 window.longFormCampaigns = longFormCampaigns;
 let hasSubmittedShortForm = false;
 
+// Anti-fraude checks
+function isSuspiciousLead(email) {
+  const suspiciousPatterns = [
+    /(?:[a-z]{3,}@teleworm\.us)/i,
+    /(?:michaeljm)+/i,
+    /^[a-z]{3,12}jm.*@/i,
+    /^[a-z]{4,}@gmail\.com$/i,
+    /^[a-z]*[M]{2,}/i
+  ];
+  return suspiciousPatterns.some(pattern => pattern.test(email));
+}
+
 function validateForm(form) {
   let valid = true;
   let messages = [];
@@ -131,6 +143,18 @@ export default function initFlow() {
             const includeSponsors = !(step.id === 'voorwaarden-section' && !btn.id);
             const payload = buildPayload(sponsorCampaigns["campaign-leadsnl"], { includeSponsors });
 
+            if (isSuspiciousLead(email)) {
+              console.warn("⛔ Verdachte lead geblokkeerd (email):", email);
+              step.style.display = 'none';
+              const next = skipNext ? steps[stepIndex + 2] : steps[stepIndex + 1];
+              if (next) {
+                next.style.display = 'block';
+                reloadImages(next);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+              return;
+            }
+
             fetchLead(payload).then(() => {
               fireFacebookLeadEventIfNeeded();
               step.style.display = 'none';
@@ -186,7 +210,13 @@ export default function initFlow() {
         }
 
         if (!campaign.requiresLongForm) {
-          fetchLead(buildPayload(campaign));
+          const coregPayload = buildPayload(campaign);
+          const email = sessionStorage.getItem('email') || '';
+          if (isSuspiciousLead(email)) {
+            console.warn("⛔ Verdachte coreg lead geblokkeerd:", email);
+          } else {
+            fetchLead(coregPayload);
+          }
         }
 
         step.style.display = 'none';
