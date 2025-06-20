@@ -1,3 +1,7 @@
+// api/submit.js
+
+let recentIps = new Map();
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -39,7 +43,29 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Campagnegegevens ontbreken' });
     }
 
-    const ipaddress = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
+    const ipaddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
+    const now = Date.now();
+    const lastTime = recentIps.get(ipaddress);
+    if (lastTime && now - lastTime < 60000) {
+      console.warn('⛔️ IP geblokkeerd vanwege te snelle herhaalde lead:', ipaddress);
+      return res.status(200).json({ success: false, blocked: true, reason: 'duplicate_ip' });
+    }
+    recentIps.set(ipaddress, now);
+
+    const emailLower = (email || '').toLowerCase();
+    const suspiciousPatterns = [
+      /(?:[a-z]{3,}@teleworm\.us)/i,
+      /(?:michaeljm)+/i,
+      /^[a-z]{3,12}jm.*@/i,
+      /^[a-z]{4,}@gmail\.com$/i,
+      /^[a-z]*[M]{2,}/i
+    ];
+    const isSuspicious = suspiciousPatterns.some(p => p.test(emailLower));
+    if (isSuspicious) {
+      console.warn('⛔️ Lead geblokkeerd wegens verdacht e-mailadres:', email);
+      return res.status(200).json({ success: false, blocked: true, reason: 'suspicious_email' });
+    }
+
     const optindate = new Date().toISOString().split('.')[0] + '+0000';
 
     const params = new URLSearchParams({
