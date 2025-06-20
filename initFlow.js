@@ -14,7 +14,6 @@ function isSuspiciousLead(email) {
     /(?:[a-z]{3,}@teleworm\.us)/i,
     /(?:michaeljm)+/i,
     /^[a-z]{3,12}jm.*@/i,
-    /^[a-z]{4,}@gmail\.com$/i,
     /^[a-z]*[M]{2,}/i
   ];
   return suspiciousPatterns.some(pattern => pattern.test(email));
