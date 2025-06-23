@@ -3,6 +3,10 @@ import { fetchLead, buildPayload } from './formSubmit.js';
 import sponsorCampaigns from './sponsorCampaigns.js';
 import setupSovendus from './setupSovendus.js';
 import { fireFacebookLeadEventIfNeeded } from './facebookpixel.js';
+import { trackPageView, trackFunnelStep, trackError } from './monitoring/vercel-analytics';
+
+// Initialize analytics
+trackPageView(window.location.pathname);
 
 const longFormCampaigns = [];
 window.longFormCampaigns = longFormCampaigns;
@@ -79,20 +83,45 @@ function fetchLeadIfNotSuspicious(payload) {
 }
 
 export default function initFlow() {
-  const longFormSection = document.getElementById('long-form-section');
-  if (longFormSection) {
-    longFormSection.style.display = 'none';
-    longFormSection.setAttribute('data-displayed', 'false');
-  }
+  try {
+    const longFormSection = document.getElementById('long-form-section');
+    if (longFormSection) {
+      longFormSection.style.display = 'none';
+      longFormSection.setAttribute('data-displayed', 'false');
+    }
 
-  const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
-  longFormCampaigns.length = 0;
+    const steps = Array.from(document.querySelectorAll('.flow-section, .coreg-section'));
+    longFormCampaigns.length = 0;
 
-  if (!window.location.hostname.includes("swipepages.com")) {
-    steps.forEach((el, i) => el.style.display = i === 0 ? 'block' : 'none');
-    document.querySelectorAll('.hide-on-live, #long-form-section').forEach(el => {
-      el.style.display = 'none';
+    if (!window.location.hostname.includes("swipepages.com")) {
+      steps.forEach((el, i) => el.style.display = i === 0 ? 'block' : 'none');
+      document.querySelectorAll('.hide-on-live, #long-form-section').forEach(el => {
+        el.style.display = 'none';
+      });
+    }
+
+    // Track flow initialization
+    trackFunnelStep('Flow Initialized', { stepsCount: steps.length });
+
+    steps.forEach((step, stepIndex) => {
+      step.querySelectorAll('.flow-next').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const currentStep = steps[stepIndex];
+          const nextStep = steps[stepIndex + 1];
+          
+          // Track funnel step progression
+          trackFunnelStep(`Step ${stepIndex + 1} → ${stepIndex + 2}`);
+
+          if (nextStep) {
+            currentStep.style.display = 'none';
+            nextStep.style.display = 'block';
+          }
+        });
+      });
     });
+  } catch (error) {
+    console.error('Error in initFlow:', error);
+    trackError(error);
   }
 
   steps.forEach((step, stepIndex) => {
