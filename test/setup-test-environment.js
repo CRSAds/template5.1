@@ -54,8 +54,19 @@ const mockFormValidation = () => {
   });
 };
 
+// Load monitoring scripts
+const loadScript = (src) => {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+};
+
 // Setup test environment
-export const setupTestEnvironment = () => {
+const setupTestEnvironment = () => {
   // Mock SwipePages environment
   window.location.hostname = 'test.swipepages.com';
   
@@ -65,8 +76,15 @@ export const setupTestEnvironment = () => {
   // Mock form validation
   mockFormValidation();
   
-  // Initialize flow
-  import('./initFlow.js').then(() => {
+  // Load monitoring scripts first
+  Promise.all([
+    loadScript('../monitoring/vercel-analytics.js'),
+    loadScript('../initFlow.js')
+  ]).then(() => {
     console.log('Test environment initialized');
+    // Initialize flow
+    initFlow();
+  }).catch(error => {
+    console.error('Error loading scripts:', error);
   });
 };
