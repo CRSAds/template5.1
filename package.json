@@ -1,0 +1,21 @@
+{
+  "name": "swipepages-monitoring",
+  "version": "1.0.0",
+  "description": "SwipePages template with enhanced monitoring",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^1.0.0",
+    "next": "^13.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "@testing-library/react": "^13.0.0"
+  }
+}
