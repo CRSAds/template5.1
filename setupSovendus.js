@@ -23,11 +23,11 @@ export default function setupSovendus() {
   }
 
   // Stap 2: Gegevens ophalen uit localStorage
-  const t_id = localStorage.getItem('t_id') || crypto.randomUUID();
-  const gender = localStorage.getItem('gender') || '';
-  const firstname = localStorage.getItem('firstname') || '';
-  const lastname = localStorage.getItem('lastname') || '';
-  const email = localStorage.getItem('email') || '';
+  const t_id = sessionStorage.getItem('t_id') || crypto.randomUUID();
+  const gender = sessionStorage.getItem('gender') || '';
+  const firstname = sessionStorage.getItem('firstname') || '';
+  const lastname = sessionStorage.getItem('lastname') || '';
+  const email = sessionStorage.getItem('email') || '';
   const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
 
   // Stap 3: Zet global consumer object
