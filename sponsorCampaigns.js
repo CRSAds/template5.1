@@ -132,6 +132,13 @@ const sponsorCampaigns = {
     coregAnswerKey: "coreg_answer_campaign-raadselgids",
     hasCoregFlow: false
   },
+    "campaign-vastelasten": {
+    cid: 4951,
+    sid: 34,
+    requiresLongForm: true,
+    coregAnswerKey: "coreg_answer_campaign-vastelasten",
+    hasCoregFlow: false
+  },
   "campaign-tuinmanieren": {
     cid: 4852,
     sid: 34,
