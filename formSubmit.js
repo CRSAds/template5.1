@@ -5,7 +5,7 @@ import sponsorCampaigns from './sponsorCampaigns.js';
 window.sponsorCampaigns = sponsorCampaigns;
 window.submittedCampaigns = new Set();
 
-const sponsorOptinText = `spaaractief_ja directdeals_ja qliqs_ja outspot_ja onlineacties_ja aownu_ja betervrouw_ja ipay_ja cashbackkorting_ja cashhier_ja myclics_ja seniorenvoordeelpas_ja favorieteacties_ja spaaronline_ja cashbackacties_ja woolsocks_ja dealdonkey_ja centmail_ja`;
+const sponsorOptinText = `spaaractief_ja directdeals_ja qliqs_ja outspot_ja onlineacties_ja aownu_ja betervrouw_ja ipay_ja cashbackkorting_ja cashhier_ja myclics_ja seniorenvoordeelpas_ja favorieteacties_ja spaaronline_ja cashbackacties_ja woolsocks_ja centmail_ja`;
 
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('accept-sponsors-btn');
